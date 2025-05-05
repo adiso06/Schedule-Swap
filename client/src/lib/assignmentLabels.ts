@@ -12,27 +12,50 @@ type AssignmentInterpretation = {
  * Mapping of assignment code patterns to their user-friendly interpretations
  */
 export const assignmentMappings: AssignmentInterpretation[] = [
+  // Basic statuses
   { pattern: "OFF", label: "OFF" },
+  { pattern: "Vacation", label: "Vacation" },
   { pattern: "NSLIJ:DM:IM:Vacation", label: "Vacation" },
   { pattern: "NSLIJ:DM:IM:LOA-Medical", label: "LOA (Medical)" },
+  { pattern: "TBD", label: "To Be Determined" },
+  
+  // Clinics
   { pattern: "NSLIJ:DM:IM:Clinic-", label: "Clinic", extractNumber: true },
+  
+  // Education and preparation
   { pattern: "NSLIJ:DM:IM:Board-Prep", label: "Board Prep" },
+  
+  // ICU rotations
   { pattern: "NSLIJ:DM:PULM:MICU-LIJ-N", label: "LIJ MICU Night" },
   { pattern: "NSLIJ:DM:PULM:MICU-LIJ-Sw-PM", label: "LIJ MICU Swing Night" },
   { pattern: "NSLIJ:DM:PULM:MICU-LIJ-Sw-G", label: "LIJ MICU Swing Green" },
   { pattern: "NSLIJ:DM:PULM:MICU-LIJ-Sw-Y", label: "LIJ MICU Swing Yellow" },
   { pattern: "NSLIJ:DM:PULM:MICU-LIJ-G2-Sh", label: "LIJ MICU Green 2 Short" },
   { pattern: "NSLIJ:DM:PULM:MICU-LIJ-G2-L", label: "LIJ MICU Green 2 Long" },
+  { pattern: "NSLIJ:DM:PULM:MICU-LIJ-G1-Sh", label: "LIJ MICU Green 1 Short" },
+  { pattern: "NSLIJ:DM:PULM:MICU-LIJ-G1-L", label: "LIJ MICU Green 1 Long" },
+  { pattern: "NSLIJ:DM:PULM:MICU-LIJ-Y1-Sh", label: "LIJ MICU Yellow 1 Short" },
+  { pattern: "NSLIJ:DM:PULM:MICU-LIJ-Y1-L", label: "LIJ MICU Yellow 1 Long" },
+  { pattern: "NSLIJ:DM:PULM:MICU-LIJ-Y2-Sh", label: "LIJ MICU Yellow 2 Short" },
+  { pattern: "NSLIJ:DM:PULM:MICU-LIJ-Y2-L", label: "LIJ MICU Yellow 2 Long" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-N", label: "NS MICU Night" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-Sw-PM", label: "NS MICU Swing Night" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-Sw-G", label: "NS MICU Swing Green" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-Sw-Y", label: "NS MICU Swing Yellow" },
+  { pattern: "NSLIJ:DM:PULM:MICU-NS-G1-Sh", label: "NS MICU Green 1 Short" },
+  { pattern: "NSLIJ:DM:PULM:MICU-NS-G1-L", label: "NS MICU Green 1 Long" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-G2-Sh", label: "NS MICU Green 2 Short" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-G2-L", label: "NS MICU Green 2 Long" },
+  { pattern: "NSLIJ:DM:PULM:MICU-NS-Y1-Sh", label: "NS MICU Yellow 1 Short" },
+  { pattern: "NSLIJ:DM:PULM:MICU-NS-Y1-L", label: "NS MICU Yellow 1 Long" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-Y2-Sh", label: "NS MICU Yellow 2 Short" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-Y2-L", label: "NS MICU Yellow 2 Long" },
+  
+  // Teams
   { pattern: "NSLIJ:DM:IM:Team-NS-", label: "NS Team", extractNumber: true },
   { pattern: "NSLIJ:DM:IM:Team-LIJ-", label: "LIJ Team", extractNumber: true },
+  
+  // Medicine Admitting Resident (MAR)
   { pattern: "NSLIJ:DM:IM:MAR-NS-AM", label: "NS MAR Days" },
   { pattern: "NSLIJ:DM:IM:MAR-NS-PM", label: "NS MAR Nights" },
   { pattern: "NSLIJ:DM:IM:MAR-NS-Sw-AM", label: "NS MAR Swing Days" },
@@ -41,9 +64,15 @@ export const assignmentMappings: AssignmentInterpretation[] = [
   { pattern: "NSLIJ:DM:IM:MAR-LIJ-PM", label: "LIJ MAR Nights" },
   { pattern: "NSLIJ:DM:IM:MAR-LIJ-Sw-AM", label: "LIJ MAR Swing Days" },
   { pattern: "NSLIJ:DM:IM:MAR-LIJ-Sw-PM", label: "LIJ MAR Swing Nights" },
+  
+  // Neurology
   { pattern: "DN:Neuro-Consult", label: "Neuro Consult" },
-  { pattern: "DN:Neuro", label: "Neuro" },
+  { pattern: "DN:Neuro", label: "Neurology" },
+  
+  // Administrative
   { pattern: "NSLIJ:DM:IM:Chief", label: "Chief Duty" },
+  
+  // Electives
   { pattern: "El-Research", label: "Research Elective" },
   { pattern: "EI-Pulm-LIJ", label: "LIJ Pulm Elective" },
   { pattern: "EI-Pulm-NS", label: "NS Pulm Elective" },
@@ -54,12 +83,23 @@ export const assignmentMappings: AssignmentInterpretation[] = [
   { pattern: "EI-Renal-LIJ", label: "LIJ Renal Elective" },
   { pattern: "EI-Renal-NS", label: "NS Renal Elective" },
   { pattern: "EI-US-NS", label: "NS Ultrasound Elective" },
+  
+  // Cardiology
+  { pattern: "CARD:", label: "Cardiology" },
   { pattern: "CARD:El-Cards-LIJ", label: "LIJ Cards Elective" },
+  { pattern: "CARD:El-Cards-NS", label: "NS Cards Elective" },
   { pattern: "CARD:El-Cards-Ep", label: "Cards EP Elective" },
   { pattern: "CARD:El-Cath", label: "Cards Cath Elective" },
   { pattern: "CARD:CCU-NS-D", label: "NS CCU (Day)" },
+  { pattern: "CARD:CCU-LIJ-D", label: "LIJ CCU (Day)" },
+  { pattern: "CARD:CCU-NS-N", label: "NS CCU (Night)" },
+  { pattern: "CARD:CCU-LIJ-N", label: "LIJ CCU (Night)" },
+  
+  // International and special rotations
   { pattern: "NSLIJ:DM:IM:Uganda", label: "Uganda Elective" },
-  { pattern: "NSLIJ:DM:GERI:El-Geri", label: "Geri Elective" },
+  
+  // Specialized departments
+  { pattern: "NSLIJ:DM:GERI:El-Geri", label: "Geriatrics Elective" },
   { pattern: "NSLIJ:DM:GI:El-GI-LIJ", label: "LIJ GI Elective" },
   { pattern: "NSLIJ:DM:GI:El-GI-NS", label: "NS GI Elective" },
   { pattern: "NSLIJ:DM:HO:El-HemOnc-NS", label: "NS Hem/Onc Elective" },
@@ -70,11 +110,14 @@ export const assignmentMappings: AssignmentInterpretation[] = [
   { pattern: "NSLIJ:DM:PULM:El-Pulm-NS", label: "NS Pulm Elective" },
   { pattern: "NSLIJ:DM:GI:El-Hep-LIJ", label: "LIJ Hepatology Elective" },
   { pattern: "NSLIJ:DM:PALL:El-Pall-LIJ", label: "LIJ Palliative Care Elective" },
-  { pattern: "CARD:El-Cards-NS", label: "NS Cards Elective" },
-  { pattern: "CARD:CCU-LIJ-D", label: "LIJ CCU (Day)" },
+  
+  // Additional departments
   { pattern: "DPEDS:AI:El-AI", label: "Pediatrics AI Elective" },
   { pattern: "DERM:El-Derm-LIJ", label: "LIJ Dermatology Elective" },
-  // Add any additional mappings here
+  
+  // Generic pattern matching for common prefixes
+  { pattern: "NSLIJ:DM:", label: "NSLIJ Department of Medicine" },
+  { pattern: "El-", label: "Elective" }
 ];
 
 /**

@@ -67,7 +67,6 @@ export default function SwapResults() {
                       <div className="text-sm text-gray-500 mb-1">Your Assignment:</div>
                       <div className={`text-sm font-medium p-2 rounded border ${getAssignmentBgColor(swap.assignmentA.type)}`}>
                         <div>{getUserFriendlyLabel(swap.assignmentA.code)}</div>
-                        <div className="mt-1 text-xs text-gray-500">{swap.assignmentA.code}</div>
                         <span className={`mt-1 inline-block text-xs px-1.5 rounded-full ${getAssignmentTypeBadgeColor(swap.assignmentA.type)}`}>
                           {swap.assignmentA.type}
                         </span>
