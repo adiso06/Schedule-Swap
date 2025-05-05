@@ -204,7 +204,11 @@ export const assignmentClassification: AssignmentClassification = {
  * Default schedule data in JSON format for loading as the baseline schedule.
  * This is the schedule data that will be shown if users don't upload their own.
  */
-export const defaultScheduleJSON = [
+// Import the default schedule data from JSON file
+import defaultScheduleDataJSON from './defaultScheduleData.json';
+
+// Export it for use in the application
+export const defaultScheduleJSON = defaultScheduleDataJSON as [
     {
         "Name": "Aboseria, Ahmed",
         "PGY Level": "PGY1",
@@ -349,9 +353,41 @@ export const defaultScheduleJSON = [
 
 /**
  * This is backward compatibility for the old tab-delimited format
+ * Generated from the defaultScheduleJSON data
  */
-export const defaultScheduleData = `Name\tPGY Level\tApr-22\tApr-23\tApr-24\tApr-25\tApr-26\tApr-27\tApr-28\tApr-29\tApr-30\tMay-1\tMay-2\tMay-3\tMay-4\tMay-5\tMay-6\tMay-7\tMay-8\tMay-9\tMay-10\tMay-11\tMay-12\tMay-13\tMay-14\tMay-15
-Aboseria, Ahmed\tPGY1\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-L\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-S\tOFF\tNSLIJ:DM:IM:Team-NS-2-L\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-L\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-L\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-S\tOFF\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Team-LIJ-1-L\tNSLIJ:DM:IM:Team-LIJ-1-S\tNSLIJ:DM:IM:Team-LIJ-1-L\tNSLIJ:DM:IM:Team-LIJ-1-S`;
+export const defaultScheduleData = (() => {
+  const headers = ['Name', 'PGY Level'];
+  const dateHeaders = [];
+  
+  // Get all date headers from the first resident
+  if (defaultScheduleJSON.length > 0) {
+    Object.keys(defaultScheduleJSON[0]).forEach(key => {
+      if (key !== 'Name' && key !== 'PGY Level') {
+        dateHeaders.push(key);
+      }
+    });
+  }
+  
+  // Add date headers to main headers array
+  headers.push(...dateHeaders);
+  
+  // Convert headers to tab-delimited format
+  let result = headers.join('\t') + '\n';
+  
+  // Add each resident's data
+  defaultScheduleJSON.forEach(resident => {
+    const rowData = [resident['Name'], resident['PGY Level']];
+    
+    // Add each date's data
+    dateHeaders.forEach(date => {
+      rowData.push(resident[date] || '');
+    });
+    
+    result += rowData.join('\t') + '\n';
+  });
+  
+  return result.trim();
+})();
 
 /**
  * Placeholder for demo schedule HTML string.
