@@ -89,19 +89,26 @@ export const assignmentMappings: AssignmentInterpretation[] = [
   { pattern: "NSLIJ:DM:ID:El-ID-LIJ", label: "LIJ ID Elective" },
   { pattern: "NSLIJ:DM:ID:El-ID-NS", label: "NS ID Elective" },
   { pattern: "NSLIJ:DM:GI:El-Hep-NS", label: "NS Hepatology Elective" },
+  { pattern: "NSLIJ:DM:GI:El-Hep-LIJ", label: "LIJ Hepatology Elective" },
   { pattern: "NSLIJ:DM:PULM:El-US-NS", label: "NS US Elective" },
   { pattern: "NSLIJ:DM:PULM:El-Sleep-NS", label: "NS Sleep Elective" },
   { pattern: "NSLIJ:DM:PALL:El-Pall-NSUH", label: "NSUH Palliative Care Elective" },
   { pattern: "NSLIJ:DE:ER-LIJ", label: "LIJ ER" },
   { pattern: "NSLIJ:DE:ER-NS", label: "NS ER" },
+  { pattern: "ER:ER-LIJ", label: "LIJ ER" },
+  { pattern: "DPEDS:AI:El-AI", label: "AI Elective" },
   { pattern: "MICU-NS-Shw-PM", label: "NS MICU Swing Night" },
   { pattern: "MICU-NS-Shw-Y", label: "NS MICU Swing Yellow" },
+  { pattern: "MICU-LIJ-Shw-PM", label: "LIJ MICU Swing Night" },
+  { pattern: "MICU-LIJ-Shw-Y", label: "LIJ MICU Swing Yellow" },
+  { pattern: "MICU-LIJ-Shw-G", label: "LIJ MICU Swing Green" },
   { pattern: "0", label: "Off" },
   { pattern: "El-Research", label: "Research Elective" }, // Specific electives before generic El-
   { pattern: "EI-Pulm-LIJ", label: "LIJ Pulm Elective" },
   { pattern: "EI-Pulm-NS", label: "NS Pulm Elective" },
   { pattern: "EI-Rheum-LIJ", label: "LIJ Rheum Elective" },
   { pattern: "EI-Rheum-NS", label: "NS Rheum Elective" },
+  { pattern: "NSLIJ:DM:IM:El-Rheum-LIJ", label: "LIJ Rheum Elective" },
   { pattern: "EI-Endo-LIJ", label: "LIJ Endo Elective" },
   { pattern: "EI-Endo-NS", label: "NS Endo Elective" },
   { pattern: "EI-Renal-LIJ", label: "LIJ Renal Elective" },
@@ -124,6 +131,7 @@ export const assignmentMappings: AssignmentInterpretation[] = [
     label: "Valley Stream Pulm Elective",
   }, // Exact match if code is always this
   { pattern: "NSLIJ:DM:PULM:El-Pulm-NS", label: "NS Pulm Elective" },
+  { pattern: "NSLIJ:DM:PULM:El-Pulm-LIJ", label: "LIJ Pulm Elective" },
 
   // --- Prefixes (Longer Before Shorter) ---
   // Note: Specific MICU/MAR/Team codes above will match before these prefixes
