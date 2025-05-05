@@ -11,9 +11,19 @@ import { useContext } from "react";
 import { ScheduleContext } from "@/context/ScheduleContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateForDisplay, getAssignmentTypeBadgeColor } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { format, parse } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 
 export default function SwapFinderForm() {
   const [isSearching, setIsSearching] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [residentInput, setResidentInput] = useState("");
+  const [filteredResidents, setFilteredResidents] = useState<string[]>([]);
+  const [dateInput, setDateInput] = useState("");
+  
   const context = useContext(ScheduleContext);
   if (!context) {
     throw new Error("SwapFinderForm must be used within a ScheduleProvider");
@@ -32,8 +42,83 @@ export default function SwapFinderForm() {
   useEffect(() => {
     if (!currentDate && metadata.dates.length > 0) {
       setCurrentDate(metadata.dates[0]);
+      setDateInput(formatDateForDisplay(metadata.dates[0]));
     }
   }, [metadata.dates, currentDate, setCurrentDate]);
+  
+  // Initialize the resident input field with the current resident
+  useEffect(() => {
+    if (currentResident) {
+      setResidentInput(currentResident);
+    }
+  }, [currentResident]);
+  
+  // Handle resident filtering based on input
+  useEffect(() => {
+    if (residentInput.trim() === "") {
+      setFilteredResidents([]);
+      return;
+    }
+    
+    const lowercaseInput = residentInput.toLowerCase();
+    const filtered = Object.keys(residents).filter(name => 
+      name.toLowerCase().includes(lowercaseInput)
+    );
+    
+    setFilteredResidents(filtered);
+  }, [residentInput, residents]);
+  
+  // Handle date input changes
+  const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDateInput(e.target.value);
+    
+    // Try to match with available dates
+    const input = e.target.value.toLowerCase();
+    for (const date of metadata.dates) {
+      const formatted = formatDateForDisplay(date).toLowerCase();
+      if (formatted.includes(input)) {
+        setCurrentDate(date);
+        return;
+      }
+    }
+  };
+  
+  // Handle date selection from calendar
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+    
+    // Convert to YYYY-MM-DD format
+    const dateStr = format(date, "yyyy-MM-dd");
+    
+    // Check if this date is in our available dates
+    if (metadata.dates.includes(dateStr)) {
+      setCurrentDate(dateStr);
+      setDateInput(formatDateForDisplay(dateStr));
+    } else {
+      // Find the closest available date
+      const closest = metadata.dates.reduce((prev, curr) => {
+        const prevDate = new Date(prev);
+        const currDate = new Date(curr);
+        const targetDate = date;
+        
+        const prevDiff = Math.abs(prevDate.getTime() - targetDate.getTime());
+        const currDiff = Math.abs(currDate.getTime() - targetDate.getTime());
+        
+        return prevDiff < currDiff ? prev : curr;
+      }, metadata.dates[0]);
+      
+      setCurrentDate(closest);
+      setDateInput(formatDateForDisplay(closest));
+      
+      toast({
+        title: "Date Adjusted",
+        description: "Selected the closest available date in the schedule.",
+        variant: "default"
+      });
+    }
+    
+    setCalendarOpen(false);
+  };
   
   const getCurrentAssignment = () => {
     if (!currentResident || !currentDate || !schedule[currentResident]) {
@@ -85,57 +170,72 @@ export default function SwapFinderForm() {
       <h2 className="text-lg font-medium text-gray-800 mb-3">Find Swaps</h2>
       
       <div id="resident-selector" className="space-y-2">
-        <label htmlFor="resident-select" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="resident-input" className="block text-sm font-medium text-gray-700">
           Select Resident
         </label>
         <div className="relative">
-          <Select
-            value={currentResident || ""}
-            onValueChange={(value) => setCurrentResident(value)}
-            disabled={!metadata.isLoaded}
-          >
-            <SelectTrigger id="resident-select" className="w-full border border-gray-300">
-              <SelectValue placeholder="Select a resident..." />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.keys(residents).map((name) => (
-                <SelectItem key={name} value={name}>
-                  {name} (PGY{residents[name].pgyLevel})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="relative">
+            <Input
+              id="resident-input"
+              placeholder="Search for a resident..."
+              value={residentInput}
+              onChange={(e) => setResidentInput(e.target.value)}
+              className="w-full border border-gray-300"
+              disabled={!metadata.isLoaded}
+            />
+            
+            {filteredResidents.length > 0 && residentInput && (
+              <div className="absolute z-10 w-full bg-white mt-1 rounded-md border border-gray-200 shadow-lg max-h-60 overflow-y-auto">
+                {filteredResidents.map((name) => (
+                  <div
+                    key={name}
+                    className={`px-3 py-2 hover:bg-gray-100 cursor-pointer ${
+                      name === currentResident ? 'bg-blue-50 font-medium' : ''
+                    }`}
+                    onClick={() => {
+                      setCurrentResident(name);
+                      setResidentInput(name);
+                      setFilteredResidents([]);
+                    }}
+                  >
+                    {name} {residents[name] && <span className="text-xs text-gray-500 ml-1">(PGY{residents[name].pgyLevel})</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
       <div id="date-selector" className="space-y-2">
-        <label htmlFor="swap-date" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="date-input" className="block text-sm font-medium text-gray-700">
           Select Date
         </label>
         <div className="relative">
-          <Select
-            value={currentDate || ""}
-            onValueChange={(value) => {
-              console.log("Setting date to:", value);
-              setCurrentDate(value);
-            }}
-            disabled={!metadata.isLoaded || metadata.dates.length === 0}
-          >
-            <SelectTrigger id="swap-date" className="w-full border border-gray-300">
-              <SelectValue placeholder="Select a date..." />
-            </SelectTrigger>
-            <SelectContent>
-              {metadata.dates.length > 0 ? (
-                metadata.dates.map((date) => (
-                  <SelectItem key={date} value={date}>
-                    {formatDateForDisplay(date)}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="no-dates" disabled>No dates available</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <div className="relative flex items-center">
+                <Input
+                  id="date-input"
+                  placeholder="Select a date..."
+                  value={dateInput}
+                  onChange={handleDateInputChange}
+                  className="pr-10 border border-gray-300"
+                  disabled={!metadata.isLoaded || metadata.dates.length === 0}
+                />
+                <CalendarIcon className="absolute right-3 h-4 w-4 text-gray-500 cursor-pointer" onClick={() => setCalendarOpen(true)} />
+              </div>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={currentDate ? new Date(currentDate) : undefined}
+                onSelect={handleDateSelect}
+                disabled={!metadata.isLoaded || metadata.dates.length === 0}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
         
         {metadata.isLoaded && metadata.dates.length === 0 && (

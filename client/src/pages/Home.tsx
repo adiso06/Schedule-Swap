@@ -23,14 +23,14 @@ export default function Home() {
             <SwapFinderForm />
           </div>
           
-          {/* Middle Panel: Schedule Visualization */}
-          <div className="lg:col-span-8 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <ScheduleVisualization />
+          {/* Middle Panel: Swap Results */}
+          <div className="lg:col-span-8 bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <SwapResults />
           </div>
           
-          {/* Bottom Panel: Swap Results */}
-          <div className="lg:col-span-12 bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <SwapResults />
+          {/* Bottom Panel: Schedule Visualization */}
+          <div className="lg:col-span-12 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <ScheduleVisualization />
           </div>
         </div>
       </main>
