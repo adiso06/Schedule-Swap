@@ -7,7 +7,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { useSchedule } from "@/context/ScheduleContext";
+import { useSchedule } from "@/hooks/useSchedule";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateForDisplay, getAssignmentTypeBadgeColor } from "@/lib/utils";
 

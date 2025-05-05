@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useSchedule } from "@/context/ScheduleContext";
+import { useSchedule } from "@/hooks/useSchedule";
 import { formatDateToYYYYMMDD, getWeekDisplay } from "@/lib/utils";
 import { addDays, startOfWeek, parseISO, format } from "date-fns";
 

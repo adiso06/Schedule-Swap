@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useSchedule } from "@/context/ScheduleContext";
+import { useSchedule } from "@/hooks/useSchedule";
 import { demoScheduleHTML } from "@/lib/data";
 import PGYLevelEditor from "./PGYLevelEditor";
 
