@@ -845,50 +845,93 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     });
     
     console.log(`Found ${futureSwapDates.length} potential future dates to check`);
+    console.log("PGY levels:", { 
+      [residentAName]: residentA.pgyLevel, 
+      [residentBName]: residentB.pgyLevel 
+    });
     
-    // Debug: Check some specific dates of interest
-    const debugDate = "2025-06-03"; // The date we're particularly interested in
-    if (futureSwapDates.includes(debugDate)) {
-      const assignmentA = state.schedule[residentAName]?.[debugDate];
-      const assignmentB = state.schedule[residentBName]?.[debugDate];
-      
-      console.log(`DEBUG - Checking ${debugDate}:`);
-      console.log(`- ${residentAName}'s assignment:`, assignmentA ? 
-        `${assignmentA.code} (Type: ${assignmentA.type}, Swappable: ${assignmentA.swappable})` : 
-        "No assignment");
-      console.log(`- ${residentBName}'s assignment:`, assignmentB ? 
-        `${assignmentB.code} (Type: ${assignmentB.type}, Swappable: ${assignmentB.swappable})` : 
-        "No assignment");
+    // Search all dates to find June 3 and check what assignments those residents have
+    console.log("Searching all future dates for the residents' assignments...");
+    let juneThirdFound = false;
+    
+    // Loop through all future dates to check for the specific date we're interested in
+    for (const futureDate of futureSwapDates) {
+      if (futureDate === "2025-06-03") {
+        juneThirdFound = true;
+        const assignmentA = state.schedule[residentAName]?.[futureDate];
+        const assignmentB = state.schedule[residentBName]?.[futureDate];
         
-      // If debugging shows the right types but validation is failing, let's see which validation rule fails
-      if (assignmentA?.type === "Elective" && assignmentB?.type === "Required") {
-        console.log("Types look good for payback, running validation...");
-        const scheduleA = state.schedule[residentAName] || {};
-        const scheduleB = state.schedule[residentBName] || {};
-        
-        const validationResult = validateSwap(
-          residentA,
-          residentB,
-          assignmentA,
-          assignmentB,
-          debugDate,
-          scheduleA,
-          scheduleB
-        );
-        
-        console.log(`Validation result for ${debugDate}: ${validationResult.isValid ? "VALID" : "INVALID"}`);
-        if (!validationResult.isValid) {
-          console.log(`Validation failed because: ${validationResult.reason}`);
-          console.log("Details:", JSON.stringify({
-            isPgyCompatible: validationResult.isPgyCompatible,
-            isAssignmentSwappable: validationResult.isAssignmentSwappable,
-            isMarRestrictionValid: validationResult.isMarRestrictionValid,
-            isBoardPrepRestrictionValid: validationResult.isBoardPrepRestrictionValid,
-            isAssignmentTypeCompatible: validationResult.isAssignmentTypeCompatible,
-            isSevenDayRuleValid: validationResult.isSevenDayRuleValid
-          }));
+        console.log(`CRITICAL DEBUG - June 3rd Assignments:`)
+        console.log(`- ${residentAName} on ${futureDate}:`, 
+          assignmentA ? 
+          `Code: ${assignmentA.code}, Type: ${assignmentA.type}, Swappable: ${assignmentA.swappable}` : 
+          "No assignment");
+        console.log(`- ${residentBName} on ${futureDate}:`, 
+          assignmentB ? 
+          `Code: ${assignmentB.code}, Type: ${assignmentB.type}, Swappable: ${assignmentB.swappable}` : 
+          "No assignment");
+          
+        // Check if the types match what we expect
+        if (assignmentA && assignmentB) {
+          console.log(`Type check for payback: ${assignmentA.type} (should be Elective) & ${assignmentB.type} (should be Required)`);
+          
+          // Run the validation manually for this date
+          const scheduleA = state.schedule[residentAName] || {};
+          const scheduleB = state.schedule[residentBName] || {};
+          
+          console.log("MANUAL VALIDATION TEST - June 3rd");
+          
+          // C2: Assignment Swappability
+          const isAssignmentSwappable = (
+            assignmentA.swappable !== SwappableStatus.No && 
+            assignmentB.swappable !== SwappableStatus.No
+          );
+          console.log(`Swappability check: ${isAssignmentSwappable}`);
+          
+          // C3: PGY Level Restrictions
+          const isPgyCompatible = residentA.pgyLevel === residentB.pgyLevel || 
+            (residentA.pgyLevel >= 2 && residentB.pgyLevel >= 2);
+          console.log(`PGY compatible check: ${isPgyCompatible}`);
+          
+          // C4: MAR Shift Restriction
+          const isAMar = assignmentA.code.includes("MAR-");
+          const isBMar = assignmentB.code.includes("MAR-");
+          const isMarRestrictionValid = 
+            (!isAMar || (isAMar && residentB.pgyLevel === 3)) &&
+            (!isBMar || (isBMar && residentA.pgyLevel === 3));
+          console.log(`MAR restriction check: ${isMarRestrictionValid}`);
+          
+          // C5: Board Prep Restriction
+          const isABoardPrep = assignmentA.code.includes("Board-Prep");
+          const isBBoardPrep = assignmentB.code.includes("Board-Prep");
+          const isBoardPrepRestrictionValid =
+            (!isABoardPrep || (isABoardPrep && residentB.pgyLevel === 3)) &&
+            (!isBBoardPrep || (isBBoardPrep && residentA.pgyLevel === 3));
+          console.log(`Board prep restriction check: ${isBoardPrepRestrictionValid}`);
+          
+          // C7: Assignment Type Compatibility
+          let isAssignmentTypeCompatible = false;
+          if (assignmentA.type === "Elective" && assignmentB.type === "Required") {
+            isAssignmentTypeCompatible = true;
+            console.log("Assignment type MATCH: Elective <-> Required");
+          } else {
+            console.log(`Assignment type MISMATCH: ${assignmentA.type} <-> ${assignmentB.type}`);
+          }
+          
+          // Overall validation
+          const isValid = isAssignmentSwappable && 
+            isPgyCompatible && 
+            isMarRestrictionValid && 
+            isBoardPrepRestrictionValid && 
+            isAssignmentTypeCompatible;
+            
+          console.log(`Overall validation result for June 3rd: ${isValid ? "VALID" : "INVALID"}`);
         }
       }
+    }
+    
+    if (!juneThirdFound) {
+      console.log("CRITICAL ERROR: June 3rd not found in future dates list!");
     }
     
     const paybackSwaps: PaybackSwap[] = [];
@@ -905,8 +948,8 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       
       // Check payback condition: A must be on Elective and B must be on Required
       if (assignmentA.type !== "Elective" || assignmentB.type !== "Required") {
-        if (futureDate === debugDate) {
-          console.log(`Assignment type check failed for ${debugDate}: A.type=${assignmentA.type}, B.type=${assignmentB.type}`);
+        if (futureDate === "2025-06-03") {
+          console.log(`Assignment type check failed for June 3rd: A.type=${assignmentA.type}, B.type=${assignmentB.type}`);
         }
         continue;
       }
