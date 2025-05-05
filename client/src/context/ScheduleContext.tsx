@@ -846,6 +846,51 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     
     console.log(`Found ${futureSwapDates.length} potential future dates to check`);
     
+    // Debug: Check some specific dates of interest
+    const debugDate = "2025-06-03"; // The date we're particularly interested in
+    if (futureSwapDates.includes(debugDate)) {
+      const assignmentA = state.schedule[residentAName]?.[debugDate];
+      const assignmentB = state.schedule[residentBName]?.[debugDate];
+      
+      console.log(`DEBUG - Checking ${debugDate}:`);
+      console.log(`- ${residentAName}'s assignment:`, assignmentA ? 
+        `${assignmentA.code} (Type: ${assignmentA.type}, Swappable: ${assignmentA.swappable})` : 
+        "No assignment");
+      console.log(`- ${residentBName}'s assignment:`, assignmentB ? 
+        `${assignmentB.code} (Type: ${assignmentB.type}, Swappable: ${assignmentB.swappable})` : 
+        "No assignment");
+        
+      // If debugging shows the right types but validation is failing, let's see which validation rule fails
+      if (assignmentA?.type === "Elective" && assignmentB?.type === "Required") {
+        console.log("Types look good for payback, running validation...");
+        const scheduleA = state.schedule[residentAName] || {};
+        const scheduleB = state.schedule[residentBName] || {};
+        
+        const validationResult = validateSwap(
+          residentA,
+          residentB,
+          assignmentA,
+          assignmentB,
+          debugDate,
+          scheduleA,
+          scheduleB
+        );
+        
+        console.log(`Validation result for ${debugDate}: ${validationResult.isValid ? "VALID" : "INVALID"}`);
+        if (!validationResult.isValid) {
+          console.log(`Validation failed because: ${validationResult.reason}`);
+          console.log("Details:", JSON.stringify({
+            isPgyCompatible: validationResult.isPgyCompatible,
+            isAssignmentSwappable: validationResult.isAssignmentSwappable,
+            isMarRestrictionValid: validationResult.isMarRestrictionValid,
+            isBoardPrepRestrictionValid: validationResult.isBoardPrepRestrictionValid,
+            isAssignmentTypeCompatible: validationResult.isAssignmentTypeCompatible,
+            isSevenDayRuleValid: validationResult.isSevenDayRuleValid
+          }));
+        }
+      }
+    }
+    
     const paybackSwaps: PaybackSwap[] = [];
     
     // For each potential future date
@@ -860,6 +905,9 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       
       // Check payback condition: A must be on Elective and B must be on Required
       if (assignmentA.type !== "Elective" || assignmentB.type !== "Required") {
+        if (futureDate === debugDate) {
+          console.log(`Assignment type check failed for ${debugDate}: A.type=${assignmentA.type}, B.type=${assignmentB.type}`);
+        }
         continue;
       }
       
