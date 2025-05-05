@@ -85,6 +85,7 @@ export interface ValidationResult {
   isAssignmentSwappable: boolean;
   isMarRestrictionValid: boolean;
   isBoardPrepRestrictionValid: boolean;
+  isAssignmentTypeCompatible: boolean; // Added for rule C7
   isValid: boolean;
   reason?: string;
 }

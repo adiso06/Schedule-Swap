@@ -298,17 +298,21 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       isAssignmentSwappable: false,
       isMarRestrictionValid: false,
       isBoardPrepRestrictionValid: false,
+      isAssignmentTypeCompatible: false,
       isValid: false
     };
     
-    // C2: Assignment Swappability
+    // Log for debugging
+    console.log(`Validating swap between ${residentA.name} (${assignmentA.code}) and ${residentB.name} (${assignmentB.code})`);
+    
+    // C2: Assignment Swappability - check if assignments are explicitly marked as non-swappable
     validationResult.isAssignmentSwappable = (
       assignmentA.swappable !== SwappableStatus.No && 
       assignmentB.swappable !== SwappableStatus.No
     );
     
     if (!validationResult.isAssignmentSwappable) {
-      validationResult.reason = "One or both assignments are not swappable";
+      validationResult.reason = "One or both assignments are marked as non-swappable";
       return validationResult;
     }
     
@@ -349,7 +353,19 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       return validationResult;
     }
     
-    // C1: 7-Day Rule
+    // C7: Assignment Type Compatibility
+    validationResult.isAssignmentTypeCompatible = isAssignmentTypeCompatible(
+      assignmentA.type,
+      assignmentB.type
+    );
+    
+    if (!validationResult.isAssignmentTypeCompatible) {
+      validationResult.reason = "Assignment types are not compatible for swapping";
+      console.log(`Assignment type compatibility check failed: ${assignmentA.type} <-> ${assignmentB.type}`);
+      return validationResult;
+    }
+    
+    // C1: 7-Day Rule (check this last as it's more computationally intensive)
     validationResult.isSevenDayRuleValid = isSevenDayRuleValid(
       scheduleA,
       scheduleB,
@@ -365,6 +381,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     
     // All rules passed
     validationResult.isValid = true;
+    console.log("Swap is valid!");
     
     return validationResult;
   };
@@ -452,6 +469,58 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     }
     
     return true;
+  }
+  
+  // C7: Assignment Type Compatibility
+  function isAssignmentTypeCompatible(
+    typeA: AssignmentType,
+    typeB: AssignmentType
+  ): boolean {
+    // Log for debugging
+    console.log(`Checking assignment type compatibility: ${typeA} <-> ${typeB}`);
+    
+    // According to rule C7, a swap is valid only if one of these conditions holds:
+    // 1. Type(A) is Elective AND Type(B) is Elective.
+    if (typeA === "Elective" && typeB === "Elective") {
+      console.log("Valid: Elective <-> Elective");
+      return true;
+    }
+    
+    // 2. Type(A) is Required AND Type(B) is Elective.
+    if (typeA === "Required" && typeB === "Elective") {
+      console.log("Valid: Required <-> Elective");
+      return true;
+    }
+    
+    // 3. Type(A) is Elective AND Type(B) is Required.
+    if (typeA === "Elective" && typeB === "Required") {
+      console.log("Valid: Elective <-> Required");
+      return true;
+    }
+    
+    // 4. Type(A) is Status (OFF, Board-Prep) AND Type(B) is Elective.
+    if (typeA === "Status" && typeB === "Elective") {
+      console.log("Valid: Status <-> Elective");
+      return true;
+    }
+    
+    // 5. Type(A) is Elective AND Type(B) is Status (OFF, Board-Prep).
+    if (typeA === "Elective" && typeB === "Status") {
+      console.log("Valid: Elective <-> Status");
+      return true;
+    }
+    
+    // 6. Type(A) is Status (OFF, Board-Prep) AND Type(B) is Status (OFF, Board-Prep).
+    if (typeA === "Status" && typeB === "Status") {
+      console.log("Valid: Status <-> Status");
+      return true;
+    }
+    
+    // All other combinations are not valid, including:
+    // - Required <-> Required
+    // - Required <-> Status
+    console.log(`Invalid combination: ${typeA} <-> ${typeB}`);
+    return false;
   }
   
   // C1: 7-Day Rule
