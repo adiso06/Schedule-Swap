@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, ReactNode, useContext } from "react";
+import React, { createContext, useReducer, ReactNode, useContext, useEffect } from "react";
 import { 
   ScheduleState, 
   PotentialSwap, 
@@ -9,6 +9,7 @@ import {
   AssignmentType
 } from "@/lib/types";
 import { parseScheduleHTML, inferPGYLevels } from "@/lib/scheduleParser";
+import { parseExcelData } from "@/lib/excelParser";
 import { 
   checkConsecutiveWorkingDays, 
   getConsecutiveRanges, 
@@ -16,16 +17,33 @@ import {
   isWorkingDay
 } from "@/lib/utils";
 import { demoPGYData } from "@/lib/data";
+import { 
+  saveSchedule, 
+  getAllSchedules, 
+  getScheduleById, 
+  deleteSchedule,
+  updateSchedule,
+  exportSchedules,
+  importSchedules,
+  SavedSchedule
+} from "@/lib/storage";
 
 // Define the context type
 type ScheduleContextType = {
   state: ScheduleState;
-  parseSchedule: (scheduleHtml: string) => void;
+  parseSchedule: (input: string, isExcelFormat?: boolean) => void;
   setPgyLevels: (pgyLevels: { [name: string]: PGYLevel }) => void;
   setCurrentResident: (residentName: string | null) => void;
   setCurrentDate: (date: string | null) => void;
   findValidSwaps: (residentName: string, date: string) => void;
   reset: () => void;
+  // Persistence functions
+  saveCurrentSchedule: (name: string) => SavedSchedule;
+  loadSchedule: (id: string) => void;
+  getAllSavedSchedules: () => SavedSchedule[];
+  deleteSchedule: (id: string) => boolean;
+  exportSchedules: () => void;
+  importSchedulesFromJson: (jsonData: string) => boolean;
 };
 
 // Create the context with a default value that will be overridden
