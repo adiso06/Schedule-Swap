@@ -8,6 +8,7 @@ export const residentsData: { [name: string]: PGYLevel } = {
 
 // Assignment classification based on the requirements document
 export const assignmentClassification: AssignmentClassification = {
+  // Basic statuses
   "OFF": {
     type: "Status",
     swappable: "Yes",
@@ -18,6 +19,8 @@ export const assignmentClassification: AssignmentClassification = {
     swappable: "No",
     notes: "Cannot be swapped. Not a working day."
   },
+  
+  // MAR assignments - swappable with PGY restrictions (this will be used as a prefix match)
   "NSLIJ:DM:IM:LOA-Medical": {
     type: "Status",
     swappable: "No",

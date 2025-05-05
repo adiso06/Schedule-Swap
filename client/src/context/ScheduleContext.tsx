@@ -165,11 +165,31 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   };
   
   const findValidSwaps = (residentName: string, date: string) => {
+    console.log(`Finding valid swaps for ${residentName} on ${date}`);
+    
     const residentA = state.residents[residentName];
     const assignmentA = state.schedule[residentName][date];
+
+    // Debug output for resident A's assignment
+    console.log(`Resident A: ${residentName}, PGY: ${residentA?.pgyLevel || 'unknown'}`);
+    console.log(`Assignment A: ${assignmentA?.code || 'none'}, Swappable: ${assignmentA?.swappable || 'N/A'}`);
+    
+    // Check if we have the assignment
+    if (!assignmentA) {
+      console.error(`No assignment found for ${residentName} on ${date}`);
+      dispatch({
+        type: "SET_VALID_SWAPS",
+        payload: {
+          validSwaps: [],
+          invalidReason: `No assignment found for ${residentName} on ${date}`
+        }
+      });
+      return;
+    }
     
     // Validate if the assignment is swappable
     if (assignmentA.swappable === "No") {
+      console.log(`Assignment ${assignmentA.code} is not swappable`);
       dispatch({
         type: "SET_VALID_SWAPS",
         payload: {
@@ -193,6 +213,20 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       // Skip if no assignment for that day
       if (!assignmentB) return;
       
+      // Debug for specific residents mentioned
+      if (residentName === "Chen Anne" && residentBName === "Flescher Andrew" && date === "2025-04-25") {
+        console.log("EVALUATING SPECIFIC SWAP CASE:");
+        console.log(`Chen Anne (PGY ${residentA.pgyLevel}) - ${assignmentA.code} (${assignmentA.swappable})`);
+        console.log(`Andrew Flescher (PGY ${residentB.pgyLevel}) - ${assignmentB.code} (${assignmentB.swappable})`);
+      }
+      
+      // Also check the reverse case
+      if (residentName === "Flescher Andrew" && residentBName === "Chen Anne" && date === "2025-04-25") {
+        console.log("EVALUATING SPECIFIC SWAP CASE (REVERSE):");
+        console.log(`Andrew Flescher (PGY ${residentA.pgyLevel}) - ${assignmentA.code} (${assignmentA.swappable})`);
+        console.log(`Chen Anne (PGY ${residentB.pgyLevel}) - ${assignmentB.code} (${assignmentB.swappable})`);
+      }
+      
       // Validate the potential swap
       const validationResult = validateSwap(
         residentA,
@@ -203,6 +237,22 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         state.schedule[residentName],
         state.schedule[residentBName]
       );
+      
+      // Log validation details for the specific case
+      if ((residentName === "Chen Anne" && residentBName === "Flescher Andrew") || 
+          (residentName === "Flescher Andrew" && residentBName === "Chen Anne")) {
+        if (date === "2025-04-25") {
+          console.log("VALIDATION RESULT DETAILS:", {
+            isPgyCompatible: validationResult.isPgyCompatible,
+            isAssignmentSwappable: validationResult.isAssignmentSwappable,
+            isMarRestrictionValid: validationResult.isMarRestrictionValid,
+            isBoardPrepRestrictionValid: validationResult.isBoardPrepRestrictionValid,
+            isSevenDayRuleValid: validationResult.isSevenDayRuleValid,
+            isValid: validationResult.isValid,
+            reason: validationResult.reason || 'Valid swap'
+          });
+        }
+      }
       
       if (validationResult.isValid) {
         validSwaps.push({
@@ -317,9 +367,31 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   
   // C3: PGY Level Compatibility
   function isPgyCompatible(pgyA: PGYLevel, pgyB: PGYLevel): boolean {
-    if (pgyA === 1) return pgyB === 1;
-    if (pgyA === 2) return pgyB === 2 || pgyB === 3;
-    if (pgyA === 3) return pgyB === 2 || pgyB === 3;
+    console.log(`Checking PGY compatibility: ${pgyA} vs ${pgyB}`);
+    
+    // PGY-1 can only swap with other PGY-1
+    if (pgyA === 1) {
+      const result = pgyB === 1;
+      console.log(`PGY-1 with PGY-${pgyB}: ${result ? 'Compatible' : 'Not Compatible'}`);
+      return result;
+    }
+    
+    // PGY-2 can swap with PGY-2 or PGY-3
+    if (pgyA === 2) {
+      const result = pgyB === 2 || pgyB === 3;
+      console.log(`PGY-2 with PGY-${pgyB}: ${result ? 'Compatible' : 'Not Compatible'}`);
+      return result;
+    }
+    
+    // PGY-3 can swap with PGY-2 or PGY-3
+    if (pgyA === 3) {
+      const result = pgyB === 2 || pgyB === 3;
+      console.log(`PGY-3 with PGY-${pgyB}: ${result ? 'Compatible' : 'Not Compatible'}`);
+      return result;
+    }
+    
+    // Should never get here with valid PGY levels
+    console.error(`Invalid PGY levels: ${pgyA}, ${pgyB}`);
     return false;
   }
   
@@ -330,12 +402,32 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     pgyA: PGYLevel,
     pgyB: PGYLevel
   ): boolean {
-    const isAssignmentAMar = assignmentA.code.startsWith("NSLIJ:DM:IM:MAR-");
-    const isAssignmentBMar = assignmentB.code.startsWith("NSLIJ:DM:IM:MAR-");
+    // Log for debugging
+    console.log("MAR Restriction Check:", { 
+      assignmentACode: assignmentA.code,
+      assignmentBCode: assignmentB.code,
+      pgyA, 
+      pgyB 
+    });
     
-    if (isAssignmentBMar && pgyA !== 3) return false;
-    if (isAssignmentAMar && pgyB !== 3) return false;
+    const isAssignmentAMar = assignmentA.code.includes("MAR-"); // More general matching
+    const isAssignmentBMar = assignmentB.code.includes("MAR-"); // More general matching
     
+    console.log(`Is A MAR? ${isAssignmentAMar}, Is B MAR? ${isAssignmentBMar}`);
+    
+    // If B is MAR, A must be PGY3 to take it
+    if (isAssignmentBMar && pgyA !== 3) {
+      console.log("Failed: B is MAR but A is not PGY3");
+      return false;
+    }
+    
+    // If A is MAR, B must be PGY3 to take it
+    if (isAssignmentAMar && pgyB !== 3) {
+      console.log("Failed: A is MAR but B is not PGY3");
+      return false;
+    }
+    
+    console.log("MAR restriction check passed");
     return true;
   }
   
