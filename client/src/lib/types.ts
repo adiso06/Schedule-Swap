@@ -66,6 +66,8 @@ export interface ScheduleMetadata {
   residents: string[];
   dates: string[];
   isLoaded: boolean;
+  rawInput?: string; // Store the original input HTML/Excel data
+  isExcelFormat?: boolean; // Flag to indicate if this was from Excel or HTML
 }
 
 // Potential swap between residents

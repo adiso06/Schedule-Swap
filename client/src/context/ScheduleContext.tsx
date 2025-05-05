@@ -70,8 +70,16 @@ const initialState: ScheduleState = {
 type Action =
   | { type: "PARSE_SCHEDULE"; payload: { 
       scheduleHtml: string, 
-      parsedSchedule?: ScheduleData, 
-      parsedMetadata?: ScheduleMetadata,
+      parsedSchedule?: { [residentName: string]: { [date: string]: Assignment } }, 
+      parsedMetadata?: { 
+        startDate: Date; 
+        endDate: Date; 
+        residents: string[]; 
+        dates: string[]; 
+        isLoaded: boolean; 
+        rawInput?: string;
+        isExcelFormat?: boolean;
+      },
       residents?: { [name: string]: { name: string; pgyLevel: PGYLevel } }
     } }
   | { type: "SET_PGY_LEVELS"; payload: { pgyLevels: { [name: string]: PGYLevel } } }
@@ -79,8 +87,16 @@ type Action =
   | { type: "SET_CURRENT_DATE"; payload: { date: string | null } }
   | { type: "SET_VALID_SWAPS"; payload: { validSwaps: PotentialSwap[], invalidReason: string | null } }
   | { type: "LOAD_SAVED_SCHEDULE"; payload: { 
-      schedule: ScheduleData, 
-      metadata: ScheduleMetadata, 
+      schedule: { [residentName: string]: { [date: string]: Assignment } }, 
+      metadata: { 
+        startDate: Date; 
+        endDate: Date; 
+        residents: string[]; 
+        dates: string[]; 
+        isLoaded: boolean; 
+        rawInput?: string;
+        isExcelFormat?: boolean;
+      }, 
       residents: { [name: string]: { name: string; pgyLevel: PGYLevel } },
       rawInput: string
     } }
@@ -222,6 +238,10 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       
       // Process the data and update state
       const { schedule, metadata } = parsedData;
+      
+      // Add the raw input and format flag to metadata for persistence
+      metadata.rawInput = input;
+      metadata.isExcelFormat = isExcelFormat;
       
       // Preprocess schedule to calculate isWorkingDay
       Object.keys(schedule).forEach(residentName => {
@@ -666,6 +686,68 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "RESET" });
   };
   
+  // Local storage functions
+  const saveCurrentSchedule = (name: string): SavedSchedule => {
+    if (!state.metadata.isLoaded) {
+      throw new Error("No schedule loaded to save");
+    }
+    
+    // Extract the PGY levels from the residents object
+    const pgyLevels = Object.keys(state.residents).reduce((acc, name) => {
+      acc[name] = state.residents[name].pgyLevel;
+      return acc;
+    }, {} as { [name: string]: number });
+    
+    // Get the raw input that was used to generate this schedule
+    const rawInput = state.metadata.rawInput || "";
+    
+    // Save to local storage and return the saved schedule
+    return saveSchedule(name, state.schedule, state.metadata, pgyLevels, rawInput);
+  };
+  
+  const loadSchedule = (id: string): void => {
+    const savedSchedule = getScheduleById(id);
+    if (!savedSchedule) {
+      throw new Error(`Schedule with ID ${id} not found`);
+    }
+    
+    // Convert PGY levels to Resident objects
+    const residents = Object.keys(savedSchedule.pgyLevels).reduce((acc, name) => {
+      acc[name] = {
+        name,
+        pgyLevel: savedSchedule.pgyLevels[name] as PGYLevel
+      };
+      return acc;
+    }, {} as { [name: string]: { name: string; pgyLevel: PGYLevel } });
+    
+    // Load into state
+    dispatch({
+      type: "LOAD_SAVED_SCHEDULE",
+      payload: {
+        schedule: savedSchedule.scheduleData,
+        metadata: savedSchedule.metadata,
+        residents,
+        rawInput: savedSchedule.rawInput
+      }
+    });
+  };
+  
+  const getAllSavedSchedules = (): SavedSchedule[] => {
+    return getAllSchedules();
+  };
+  
+  const deleteScheduleById = (id: string): boolean => {
+    return deleteSchedule(id);
+  };
+  
+  const exportAllSchedules = (): void => {
+    exportSchedules();
+  };
+  
+  const importSchedulesFromJson = (jsonData: string): boolean => {
+    return importSchedules(jsonData);
+  };
+
   const value = {
     state,
     parseSchedule,
@@ -673,7 +755,13 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     setCurrentResident,
     setCurrentDate,
     findValidSwaps,
-    reset
+    reset,
+    saveCurrentSchedule,
+    loadSchedule,
+    getAllSavedSchedules,
+    deleteSchedule: deleteScheduleById,
+    exportSchedules: exportAllSchedules,
+    importSchedulesFromJson
   };
   
   return (
