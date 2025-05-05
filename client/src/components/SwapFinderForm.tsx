@@ -301,8 +301,8 @@ export default function SwapFinderForm() {
           <h3 className="text-sm font-medium text-gray-700 mb-1">Current Assignment:</h3>
           <div className="flex flex-col">
             <div className="flex items-center">
-              <span id="current-assignment-code" className="text-base font-semibold">
-                {currentAssignment.code}
+              <span id="current-assignment-friendly" className="text-base font-semibold">
+                {getUserFriendlyLabel(currentAssignment.code)}
               </span>
               <span
                 id="assignment-type-badge"
@@ -314,9 +314,9 @@ export default function SwapFinderForm() {
               </span>
             </div>
             
-            {/* Show user-friendly description */}
-            <div className="text-sm text-gray-600 mt-1">
-              <span>{getUserFriendlyLabel(currentAssignment.code)}</span>
+            {/* Show original code in smaller text */}
+            <div className="text-xs text-gray-500 mt-1">
+              <span>{currentAssignment.code}</span>
             </div>
           </div>
         </div>

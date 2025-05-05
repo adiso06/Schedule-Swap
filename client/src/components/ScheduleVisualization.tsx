@@ -127,11 +127,8 @@ export default function ScheduleVisualization() {
                       >
                         {assignment?.code ? (
                           <div className="flex flex-col items-center">
-                            <div className="truncate text-xs text-gray-500 max-w-[120px] mx-auto">
-                              {assignment.code}
-                            </div>
                             <div className="truncate max-w-[120px] mx-auto font-medium">
-                              {friendlyLabel}
+                              {friendlyLabel || assignment.code}
                             </div>
                           </div>
                         ) : (
