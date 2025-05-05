@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useContext } from "react";
 import { ScheduleContext } from "@/context/ScheduleContext";
-import { demoScheduleHTML } from "@/lib/data";
+import { demoScheduleHTML, defaultScheduleData } from "@/lib/data";
 import PGYLevelEditor from "./PGYLevelEditor";
 
 export default function ScheduleImportPanel() {
@@ -15,8 +15,9 @@ export default function ScheduleImportPanel() {
   if (!context) {
     throw new Error("ScheduleImportPanel must be used within a ScheduleProvider");
   }
-  const { parseSchedule, getAllSavedSchedules, loadSchedule, deleteSchedule } = context;
+  const { parseSchedule, getAllSavedSchedules, loadSchedule, deleteSchedule, state } = context;
   const { toast } = useToast();
+  const hasScheduleData = state.metadata.isLoaded;
 
   const handleParseSchedule = () => {
     if (!scheduleInput.trim()) {
@@ -139,9 +140,49 @@ export default function ScheduleImportPanel() {
     reader.readAsText(file);
   };
 
-  // Get the current schedule state
-  const { state } = context;
-  const hasScheduleData = state.metadata.isLoaded;
+  // Load default schedule on first render
+  const loadDefaultDataRef = useRef(false);
+  
+  useEffect(() => {
+    // Only run this once
+    if (loadDefaultDataRef.current) return;
+    loadDefaultDataRef.current = true;
+    
+    // Use a small timeout to ensure all components are mounted
+    const timer = setTimeout(() => {
+      // Only load if no schedule is currently loaded
+      if (!hasScheduleData) {
+        try {
+          // Check if we have any saved schedules
+          const savedSchedules = getAllSavedSchedules();
+          
+          if (savedSchedules.length > 0) {
+            // Load the most recently saved schedule
+            const mostRecent = savedSchedules.sort((a, b) => {
+              return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+            })[0];
+            
+            loadSchedule(mostRecent.id);
+            toast({
+              title: "Schedule Loaded",
+              description: `Previously saved schedule "${mostRecent.name}" loaded automatically.`
+            });
+          } else {
+            // Load the default schedule data
+            parseSchedule(defaultScheduleData, true);
+            toast({
+              title: "Default Schedule Loaded",
+              description: "The default schedule has been loaded automatically.",
+            });
+          }
+        } catch (error) {
+          console.error("Error loading default schedule:", error);
+        }
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="mb-6">
