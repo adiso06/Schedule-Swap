@@ -1,5 +1,5 @@
 import React from "react";
-import { useSchedule } from "../hooks/useSchedule";
+import { useSchedule } from "@/context/ScheduleContext";
 import { getAssignmentTypeBadgeColor, getAssignmentBgColor, formatDateForDisplay } from "@/lib/utils";
 
 export default function SwapResults() {

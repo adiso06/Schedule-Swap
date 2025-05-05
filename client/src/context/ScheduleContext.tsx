@@ -84,7 +84,7 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
           
           acc[name] = {
             name,
-            pgyLevel: pgyLevels[name] || 2 // Default to PGY2 if not available
+            pgyLevel: (pgyLevels as Record<string, PGYLevel>)[name] || 2 // Default to PGY2 if not available
           };
           return acc;
         }, {} as { [name: string]: { name: string; pgyLevel: PGYLevel } });
@@ -112,7 +112,7 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
         residents: Object.keys(state.residents).reduce((acc, name) => {
           acc[name] = {
             ...state.residents[name],
-            pgyLevel: action.payload.pgyLevels[name] || state.residents[name].pgyLevel
+            pgyLevel: (action.payload.pgyLevels as Record<string, PGYLevel>)[name] || state.residents[name].pgyLevel
           };
           return acc;
         }, {} as { [name: string]: { name: string; pgyLevel: PGYLevel } })
