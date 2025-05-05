@@ -29,6 +29,12 @@ import {
 } from "@/lib/storage";
 
 // Define the context type
+type PaybackSwap = {
+  date: string;
+  residentAElectiveAssignment: Assignment;
+  residentBRequiredAssignment: Assignment;
+};
+
 type ScheduleContextType = {
   state: ScheduleState;
   parseSchedule: (input: string, isExcelFormat?: boolean) => void;
@@ -36,6 +42,7 @@ type ScheduleContextType = {
   setCurrentResident: (residentName: string | null) => void;
   setCurrentDate: (date: string | null) => void;
   findValidSwaps: (residentName: string, date: string) => void;
+  findPaybackSwaps: (residentAName: string, residentBName: string, originalSwapDate: string) => PaybackSwap[];
   reset: () => void;
   // Persistence functions
   saveCurrentSchedule: (name: string) => SavedSchedule;
