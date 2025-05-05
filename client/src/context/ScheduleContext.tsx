@@ -68,11 +68,22 @@ const initialState: ScheduleState = {
 
 // Action types
 type Action =
-  | { type: "PARSE_SCHEDULE"; payload: { scheduleHtml: string } }
+  | { type: "PARSE_SCHEDULE"; payload: { 
+      scheduleHtml: string, 
+      parsedSchedule?: ScheduleData, 
+      parsedMetadata?: ScheduleMetadata,
+      residents?: { [name: string]: { name: string; pgyLevel: PGYLevel } }
+    } }
   | { type: "SET_PGY_LEVELS"; payload: { pgyLevels: { [name: string]: PGYLevel } } }
   | { type: "SET_CURRENT_RESIDENT"; payload: { residentName: string | null } }
   | { type: "SET_CURRENT_DATE"; payload: { date: string | null } }
   | { type: "SET_VALID_SWAPS"; payload: { validSwaps: PotentialSwap[], invalidReason: string | null } }
+  | { type: "LOAD_SAVED_SCHEDULE"; payload: { 
+      schedule: ScheduleData, 
+      metadata: ScheduleMetadata, 
+      residents: { [name: string]: { name: string; pgyLevel: PGYLevel } },
+      rawInput: string
+    } }
   | { type: "RESET" };
 
 // Reducer function
@@ -80,6 +91,21 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
   switch (action.type) {
     case "PARSE_SCHEDULE": {
       try {
+        // If we have pre-parsed data, use it directly
+        if (action.payload.parsedSchedule && action.payload.parsedMetadata && action.payload.residents) {
+          return {
+            ...state,
+            residents: action.payload.residents,
+            schedule: action.payload.parsedSchedule,
+            metadata: action.payload.parsedMetadata,
+            currentResident: null,
+            currentDate: null,
+            validSwaps: [],
+            invalidReason: null
+          };
+        }
+        
+        // Otherwise parse the HTML content
         const { schedule, metadata } = parseScheduleHTML(action.payload.scheduleHtml);
         
         // Preprocess schedule to calculate isWorkingDay
@@ -121,6 +147,19 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
         console.error("Error parsing schedule:", error);
         throw error;
       }
+    }
+    
+    case "LOAD_SAVED_SCHEDULE": {
+      return {
+        ...state,
+        residents: action.payload.residents,
+        schedule: action.payload.schedule,
+        metadata: action.payload.metadata,
+        currentResident: null,
+        currentDate: null,
+        validSwaps: [],
+        invalidReason: null
+      };
     }
     
     case "SET_PGY_LEVELS":
