@@ -47,8 +47,8 @@ export const assignmentClassification: AssignmentClassification = {
   // --- Explicitly Non-Swappable (Rule C2) ---
   "NSLIJ:DM:IM:Vacation": {
     type: "Status",
-    swappable: "No",
-    notes: "Cannot be swapped (C2). Not a working day.",
+    swappable: "Yes", // Changed to Yes to allow vacation swaps
+    notes: "Can be swapped with other eligible assignments. Not a working day.",
   },
   "NSLIJ:DM:IM:LOA-Medical": {
     type: "Status",
@@ -58,8 +58,8 @@ export const assignmentClassification: AssignmentClassification = {
   "NSLIJ:DM:IM:Clinic-": {
     // Prefix Match
     type: "Clinic", // Corrected Type
-    swappable: "Yes", // Changed to Yes to allow clinic swaps
-    notes: "Can be swapped. Is a working day.",
+    swappable: "No",
+    notes: "Cannot be swapped (C2). Is a working day.",
   },
 
   // --- Status Assignments ---
