@@ -38,20 +38,19 @@ jobs:
 
       - name: Setup directory structure for GitHub Pages
         run: |
-          # Save the original build
-          mkdir -p ./tmp-build
-          cp -r ./dist/* ./tmp-build/
-          
           # Create swap directory
           mkdir -p ./dist/swap
           
-          # Copy build files to swap directory (but not index.html yet)
-          cp -r ./tmp-build/assets ./dist/swap/
+          # Create .nojekyll in swap directory
+          touch ./dist/swap/.nojekyll
           
-          # Create app index.html in swap directory (copy the original)
-          cp ./tmp-build/index.html ./dist/swap/index.html
+          # Create index.html for swap directory
+          cp ./dist/index.html ./dist/swap/index.html
           
-          # Create 404.html at root to handle SPA navigation
+          # Copy assets to swap directory
+          cp -r ./dist/assets ./dist/swap/
+          
+          # Create 404.html in both root and swap directory
           cat > ./dist/404.html << EOF
           <!DOCTYPE html>
           <html>
@@ -60,14 +59,18 @@ jobs:
               <title>Schedule Swap</title>
               <script>
                 // Store the URL we tried to reach for later redirect
-                sessionStorage.setItem('redirect-path', window.location.pathname);
+                var pathname = window.location.pathname;
+                console.log('404 handler - pathname:', pathname);
                 
-                // Extract repo name from path
-                var pathSegments = window.location.pathname.split('/');
-                var repoName = pathSegments[1] || '';
+                // Store the pathname for later use
+                sessionStorage.setItem('redirect-path', pathname);
                 
-                // Redirect to app root
-                if (repoName) {
+                // Determine the correct place to redirect
+                var parts = pathname.split('/');
+                var repoName = parts[1] || '';
+                
+                // If this is a GitHub Pages site, build the right path
+                if (window.location.hostname.endsWith('github.io') && repoName) {
                   window.location.href = '/' + repoName + '/swap/';
                 } else {
                   window.location.href = '/swap/';
@@ -75,10 +78,14 @@ jobs:
               </script>
             </head>
             <body>
-              Page not found. Redirecting to Schedule Swap application...
+              <h1>Page Not Found</h1>
+              <p>Redirecting to the application...</p>
             </body>
           </html>
           EOF
+          
+          # Copy 404.html to swap directory too
+          cp ./dist/404.html ./dist/swap/404.html
           
           # Create root index.html with redirect
           cat > ./dist/index.html << EOF
@@ -88,16 +95,16 @@ jobs:
               <meta charset="utf-8">
               <title>Schedule Swap</title>
               <script>
-                // Simple redirect to the swap directory
-                var pathSegments = window.location.pathname.split('/');
-                var repoName = pathSegments[1] || '';
+                // Get repo name from URL
+                var parts = window.location.pathname.split('/');
+                var repoName = parts[1] || '';
                 
-                // Only redirect if we're at the repo root
-                var isRepoRoot = pathSegments.length <= 2 || 
-                                (pathSegments.length === 3 && pathSegments[2] === '');
-                                
-                if (isRepoRoot) {
-                  if (repoName && repoName !== '') {
+                // Check if we're at the root
+                var isRoot = parts.length <= 2 || (parts.length === 3 && !parts[2]);
+                
+                if (isRoot) {
+                  // If on GitHub Pages, redirect to /repo-name/swap/
+                  if (window.location.hostname.endsWith('github.io') && repoName) {
                     window.location.href = '/' + repoName + '/swap/';
                   } else {
                     window.location.href = '/swap/';
@@ -106,19 +113,14 @@ jobs:
               </script>
             </head>
             <body>
-              Redirecting to Schedule Swap application...
+              <h1>Schedule Swap</h1>
+              <p>Redirecting to application...</p>
             </body>
           </html>
           EOF
           
-          # Create 404.html in the swap directory too
-          cp ./dist/404.html ./dist/swap/404.html
-          
-          # Create CNAME file if deploying to custom domain
+          # Create CNAME file for custom domain
           echo "adityasood.me" > ./dist/CNAME
-          
-          # Clean up
-          rm -rf ./tmp-build
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

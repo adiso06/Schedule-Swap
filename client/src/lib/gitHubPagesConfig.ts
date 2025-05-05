@@ -19,20 +19,13 @@ const detectBasePath = (): string => {
     
     // If there's at least one path segment (the repo name)
     if (pathParts.length > 0) {
-      // Check if we're already in the /swap/ directory
-      const repoName = pathParts[0];
-      const isInSwapDir = pathParts.length > 1 && pathParts[1] === 'swap';
-      
-      // If we're in the swap directory, only include the repo name
-      if (isInSwapDir) {
-        return '/' + repoName;
-      }
-      
-      // Otherwise, construct the full path
-      return '/' + pathParts.join('/');
+      // GitHub Pages - use only the repository name as the base path
+      // The whole /repo-name/swap/ path is handled by our directory structure
+      return '/' + pathParts[0]; // e.g., /Schedule-Swap
     }
   }
   
+  // For custom domains like adityasood.me or localhost
   return '';
 };
 
@@ -57,6 +50,12 @@ export function getGitHubPagesPath(path: string): string {
 
   // Ensure path starts with '/'
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  
+  // For GitHub Pages, include /swap/ in the path
+  if (typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')) {
+    return `${BASE_PATH}/swap${normalizedPath}`;
+  }
+  
   return `${BASE_PATH}${normalizedPath}`;
 }
 

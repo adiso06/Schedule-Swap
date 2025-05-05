@@ -12,7 +12,7 @@ import { BASE_PATH, getGitHubPagesPath } from "./lib/gitHubPagesConfig";
 
 // Create a custom hook for base path
 const useBasePath = () => {
-  // This will return the base path ('/swap' for GitHub Pages or '' for local development)
+  // This will return the base path ('/Schedule-Swap' for GitHub Pages or '' for local development)
   return BASE_PATH;
 };
 
@@ -28,11 +28,18 @@ const useRedirectFromSessionStorage = () => {
       // Remove the value from sessionStorage to prevent future redirects
       sessionStorage.removeItem('redirect-path');
       
+      // Extract the path without the base path
+      const cleanPath = redirectPath.replace(BASE_PATH, '');
+      console.log('Clean path after removing base path:', cleanPath);
+      
       // Only redirect if we're not already on the target path
-      if (location !== redirectPath) {
-        // If the redirectPath is not "/", update the location
-        if (redirectPath !== '/') {
-          setLocation(redirectPath);
+      if (location !== cleanPath) {
+        // If the redirectPath is not empty or "/", update the location
+        if (cleanPath && cleanPath !== '/') {
+          setLocation(cleanPath);
+        } else {
+          // Default to home page
+          setLocation('/');
         }
       }
     }
@@ -57,7 +64,7 @@ function Router() {
 function App() {
   const basePath = useBasePath();
   
-  // Handle GitHub Pages redirect on initial load
+  // Handle GitHub Pages routing on initial load
   useEffect(() => {
     // Check for a redirect path from the 404.html page
     const redirectPath = sessionStorage.getItem('redirect-path');
@@ -65,8 +72,15 @@ function App() {
       console.log('Initial load with redirect path:', redirectPath);
     }
     
-    // Log the environment
+    // Log the environment and current path
     console.log('App initialized with base path:', basePath);
+    console.log('Current pathname:', window.location.pathname);
+    
+    // For debugging GitHub Pages URLs
+    if (window.location.hostname.endsWith('github.io')) {
+      console.log('GitHub Pages detected');
+      console.log('Path segments:', window.location.pathname.split('/'));
+    }
   }, [basePath]);
   
   return (
