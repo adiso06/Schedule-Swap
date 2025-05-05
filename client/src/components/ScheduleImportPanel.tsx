@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useSchedule } from "../hooks/useSchedule";
 import { demoScheduleHTML } from "@/lib/data";
+import PGYLevelEditor from "./PGYLevelEditor";
 
 export default function ScheduleImportPanel() {
   const [scheduleHtml, setScheduleHtml] = useState("");
@@ -118,76 +119,101 @@ export default function ScheduleImportPanel() {
     reader.readAsText(file);
   };
 
+  // Get the current schedule state
+  const { state } = useSchedule();
+  const hasScheduleData = state.metadata.isLoaded;
+
   return (
     <div className="mb-6">
       <h2 className="text-lg font-medium text-gray-800 mb-3">Import Schedule</h2>
-      <div className="space-y-4">
-        <div>
-          <div className="flex justify-between items-center mb-1">
-            <label htmlFor="schedule-data" className="block text-sm font-medium text-gray-700">
-              Schedule HTML Table
-            </label>
-            <label 
-              htmlFor="file-import" 
-              className="text-xs text-blue-600 cursor-pointer hover:text-blue-800"
-            >
-              Import from file
-            </label>
-            <input 
-              type="file" 
-              id="file-import" 
-              accept=".html,.htm,.txt" 
-              className="hidden" 
-              onChange={handleFileImport} 
+      
+      {/* Show schedule import form if no schedule is loaded yet */}
+      {!hasScheduleData && (
+        <div className="space-y-4">
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label htmlFor="schedule-data" className="block text-sm font-medium text-gray-700">
+                Schedule HTML Table
+              </label>
+              <label 
+                htmlFor="file-import" 
+                className="text-xs text-blue-600 cursor-pointer hover:text-blue-800"
+              >
+                Import from file
+              </label>
+              <input 
+                type="file" 
+                id="file-import" 
+                accept=".html,.htm,.txt" 
+                className="hidden" 
+                onChange={handleFileImport} 
+              />
+            </div>
+            <Textarea
+              id="schedule-data"
+              rows={8}
+              className="w-full rounded-md border border-gray-300 text-sm font-mono"
+              placeholder="Paste schedule HTML table here..."
+              value={scheduleHtml}
+              onChange={(e) => setScheduleHtml(e.target.value)}
+              onPaste={handlePaste}
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Paste HTML table content directly from Excel, websites, or other sources
+            </p>
           </div>
-          <Textarea
-            id="schedule-data"
-            rows={8}
-            className="w-full rounded-md border border-gray-300 text-sm font-mono"
-            placeholder="Paste schedule HTML table here..."
-            value={scheduleHtml}
-            onChange={(e) => setScheduleHtml(e.target.value)}
-            onPaste={handlePaste}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Paste HTML table content directly from Excel, websites, or other sources
-          </p>
-        </div>
-        
-        <div className="flex space-x-2">
-          <Button
-            id="parse-schedule-btn"
-            variant="default"
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium"
-            onClick={handleParseSchedule}
-            disabled={isLoading || !scheduleHtml.trim()}
-          >
-            {isLoading ? "Processing..." : "Parse Schedule"}
-          </Button>
           
-          <Button
-            id="load-and-parse-demo-btn"
-            variant="secondary"
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800"
-            onClick={handleLoadAndParse}
-            disabled={isLoading}
-          >
-            Load & Parse Demo
-          </Button>
+          <div className="flex space-x-2">
+            <Button
+              id="parse-schedule-btn"
+              variant="default"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              onClick={handleParseSchedule}
+              disabled={isLoading || !scheduleHtml.trim()}
+            >
+              {isLoading ? "Processing..." : "Parse Schedule"}
+            </Button>
+            
+            <Button
+              id="load-and-parse-demo-btn"
+              variant="secondary"
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800"
+              onClick={handleLoadAndParse}
+              disabled={isLoading}
+            >
+              Load & Parse Demo
+            </Button>
+          </div>
+          
+          <div id="demo-data-controls" className="flex justify-end">
+            <button
+              id="load-demo-data-btn"
+              type="button"
+              className="text-blue-600 text-xs hover:text-blue-800 flex items-center"
+              onClick={loadDemoData}
+            >
+              Load Demo Data Only
+            </button>
+          </div>
         </div>
-        
-        <div id="demo-data-controls" className="flex justify-end">
-          <button
-            id="load-demo-data-btn"
-            type="button"
-            className="text-blue-600 text-xs hover:text-blue-800 flex items-center"
-            onClick={loadDemoData}
-          >
-            Load Demo Data Only
-          </button>
+      )}
+      
+      {/* Show PGY level editor once schedule is loaded */}
+      {hasScheduleData && (
+        <div>
+          <div className="mb-4">
+            <Button 
+              variant="outline" 
+              onClick={() => useSchedule().reset()}
+              className="text-red-600 border-red-600 hover:bg-red-50"
+            >
+              Reset Schedule Data
+            </Button>
+          </div>
+          
+          <PGYLevelEditor />
         </div>
-      </div>
+      )}
     </div>
   );
 }

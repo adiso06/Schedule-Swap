@@ -5,7 +5,8 @@ import {
   ValidationResult,
   Assignment,
   PGYLevel,
-  SwappableStatus
+  SwappableStatus,
+  AssignmentType
 } from "@/lib/types";
 import { parseScheduleHTML, inferPGYLevels } from "@/lib/scheduleParser";
 import { 
