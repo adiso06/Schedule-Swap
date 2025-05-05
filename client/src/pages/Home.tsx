@@ -1,6 +1,6 @@
 import React from "react";
 import AppHeader from "@/components/AppHeader";
-import ScheduleImportPanel from "@/components/ScheduleImportPanel";
+import CollapsibleScheduleControls from "@/components/CollapsibleScheduleControls";
 import SwapFinderForm from "@/components/SwapFinderForm";
 import ScheduleVisualization from "@/components/ScheduleVisualization";
 import SwapResults from "@/components/SwapResults";
@@ -17,13 +17,17 @@ export default function Home() {
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Panel: Controls */}
+          {/* First Row: Collapsible Schedule Controls */}
+          <div className="lg:col-span-12">
+            <CollapsibleScheduleControls />
+          </div>
+          
+          {/* Second Row: Swap Finder and Results */}
           <div className="lg:col-span-4 bg-white rounded-lg shadow-sm p-5 border border-gray-200">
-            <ScheduleImportPanel />
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Find Available Swaps</h2>
             <SwapFinderForm />
           </div>
           
-          {/* Middle Panel: Swap Results */}
           <div className="lg:col-span-8 bg-white rounded-lg shadow-sm p-6 border border-gray-200">
             <SwapResults />
           </div>
