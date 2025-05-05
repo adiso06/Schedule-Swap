@@ -1,25 +1,39 @@
 /**
  * Configuration file for GitHub Pages deployments
  * 
- * The application can run in two different environments:
- * 1. Local development - Base path is '/'
- * 2. GitHub Pages - Base path is '/swap/'
- * 
- * This file provides utilities to handle these differences
+ * This file provides utilities to handle different deployment environments
+ * without hardcoding repository names or paths.
  */
 
-// Check if the app is running on GitHub Pages
-const isGitHubPages = 
-  typeof window !== 'undefined' && 
-  (window.location.hostname === 'adityasood.me' || 
-   import.meta.env.GITHUB_PAGES === 'true');
+// Function to detect the base path at runtime
+const detectBasePath = (): string => {
+  if (typeof window === 'undefined') {
+    return ''; // Default for SSR
+  }
+  
+  const { pathname } = window.location;
+  
+  // Extract repository name and base path from the URL
+  // For URLs like https://username.github.io/repo-name/...
+  if (window.location.hostname.endsWith('github.io')) {
+    const pathParts = pathname.split('/');
+    if (pathParts.length > 1) {
+      // First part after the domain should be the repo name
+      return '/' + pathParts[1]; // e.g., /Schedule-Swap
+    }
+  }
+  
+  // For custom domains or localhost, no path prefix needed
+  return '';
+};
 
-// Determine the base path based on environment
-// This will be '/swap' when deployed to GitHub Pages
-export const BASE_PATH = isGitHubPages ? '/swap' : '';
+// Determine the runtime base path
+export const BASE_PATH = detectBasePath();
 
 // Log the environment on startup
 console.log('Application running with base path:', BASE_PATH);
+console.log('Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR');
+console.log('Pathname:', typeof window !== 'undefined' ? window.location.pathname : 'SSR');
 
 /**
  * Helper function to get a path with the correct base path
@@ -53,5 +67,5 @@ export function getAssetUrl(assetPath: string): string {
  * For use in conditional logic that needs to behave differently on GitHub Pages
  */
 export function isGitHubPagesEnvironment(): boolean {
-  return isGitHubPages;
+  return typeof window !== 'undefined' && window.location.hostname.endsWith('github.io');
 }

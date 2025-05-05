@@ -36,43 +36,40 @@ jobs:
       - name: Create .nojekyll file
         run: touch ./dist/.nojekyll
 
-      - name: Create GitHub Pages repository root
+      - name: Create index.html in repository root for redirecting
         run: |
-          # Create directory structure for GitHub Pages
-          mkdir -p ./gh-pages-root/Schedule-Swap/swap
-          
-          # Copy the built files to the swap subdirectory
-          cp -r ./dist/* ./gh-pages-root/Schedule-Swap/swap/
-          
-          # Create a redirect at the root
-          cat > ./gh-pages-root/index.html << EOF
+          # Create a root index.html that redirects to the app location
+          cat > ./dist/index.html << EOF
           <!DOCTYPE html>
           <html>
             <head>
               <meta charset="utf-8">
               <title>Schedule Swap</title>
-              <meta http-equiv="refresh" content="0;url=./Schedule-Swap/swap/" />
+              <script>
+                // Get the repository name dynamically
+                var pathSegments = window.location.pathname.split('/');
+                var repoName = pathSegments[1] || '';
+                
+                // Redirect to swap directory
+                if (repoName) {
+                  window.location.replace('/' + repoName + '/swap/');
+                } else {
+                  window.location.replace('/swap/');
+                }
+              </script>
             </head>
             <body>
-              Redirecting to application...
+              Redirecting to Schedule Swap application...
             </body>
           </html>
           EOF
           
-          # Create a redirect at the repository root
-          cat > ./gh-pages-root/Schedule-Swap/index.html << EOF
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <title>Schedule Swap</title>
-              <meta http-equiv="refresh" content="0;url=./swap/" />
-            </head>
-            <body>
-              Redirecting to application...
-            </body>
-          </html>
-          EOF
+          # Create swap directory
+          mkdir -p ./dist/swap
+          
+          # Copy the build to the swap directory
+          cp -r ./dist/*.* ./dist/swap/ 2>/dev/null || true
+          cp -r ./dist/assets ./dist/swap/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -80,7 +77,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './gh-pages-root'
+          path: './dist'
 
   deploy:
     environment:

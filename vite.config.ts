@@ -3,17 +3,6 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-// Determine the correct base path based on the environment
-const getBasePath = () => {
-  // For GitHub Pages deployment
-  if (process.env.GITHUB_PAGES === 'true') {
-    // This will output assets with paths like /swap/assets/...
-    return '/swap/';
-  }
-  // For local development
-  return '/';
-};
-
 export default defineConfig({
   plugins: [
     react(),
@@ -27,7 +16,9 @@ export default defineConfig({
         ]
       : []),
   ],
-  base: getBasePath(),
+  // In development mode, use '/'
+  // In GitHub Pages mode, use '/' - we'll handle path resolution at runtime
+  base: '/',
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client/src"),
