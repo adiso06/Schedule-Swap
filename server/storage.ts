@@ -1,14 +1,19 @@
+/**
+ * This file is a placeholder for server storage.
+ * The SWAP application is entirely client-side and doesn't use server-side storage.
+ * All data is stored in the browser's localStorage.
+ */
+
 import { users, type User, type InsertUser } from "@shared/schema";
 
-// modify the interface with any CRUD methods
-// you might need
-
+// This interface is kept for compatibility but not actually used
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 }
 
+// This class is kept for compatibility but not actually used
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   currentId: number;
