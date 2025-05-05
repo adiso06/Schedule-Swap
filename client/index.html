@@ -1,25 +1,42 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./generated-icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Residency Swap</title>
-    <meta name="description" content="A sophisticated client-side web application for healthcare professionals to manage complex residency schedule swaps with advanced scheduling intelligence." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>Residency Schedule Swap Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    
+    <!-- Script to handle GitHub Pages SPA routing -->
     <script>
-      // Check if redirected from 404 page
-      window.addEventListener('DOMContentLoaded', function() {
+      console.log('React bundle (index.js) is loading');
+      
+      // Check if we came from a redirect
+      (function() {
         var redirectPath = sessionStorage.getItem('redirect-path');
         if (redirectPath) {
-          console.log('Redirected from 404 page, path:', redirectPath);
-          sessionStorage.removeItem('redirect-path');
-          // Use history API to update the URL without reloading
-          var basePath = window.location.pathname.includes('/swap') ? '/swap/' : '/';
-          if (redirectPath && redirectPath !== '/') {
-            history.replaceState(null, null, basePath + redirectPath.substring(1));
+          console.log('Found redirect path in sessionStorage:', redirectPath);
+          
+          // Get current path
+          var currentPath = window.location.pathname;
+          console.log('Current path:', currentPath);
+          
+          // Check if we're in the /swap subdirectory
+          var inSwapPath = currentPath.includes('/swap');
+          
+          // Determine the base path for history replacement
+          var basePath = inSwapPath ? '/swap' : '';
+          console.log('Using base path:', basePath);
+          
+          // Replace the current history state with the redirect path
+          // This makes the browser URL show the correct path
+          if (redirectPath !== '/' && redirectPath !== '/404.html') {
+            var newPath = basePath + (redirectPath.startsWith('/') ? redirectPath : '/' + redirectPath);
+            console.log('Replacing history state with:', newPath);
+            window.history.replaceState(null, null, newPath);
           }
         }
-      });
+      })();
     </script>
   </head>
   <body>

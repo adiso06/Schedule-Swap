@@ -1,0 +1,539 @@
+Residency Schedule Swap Engine - Requirements Document v1.1
+1. Introduction & Purpose
+This document outlines the requirements for a system designed to facilitate the swapping of single-day assignments between residents within a given schedule. The primary goal is to allow residents to find valid, permissible swaps for a specific day's assignment, adhering to a set of predefined constraints and rules. This system aims to automate the process of identifying potential swap partners and ensuring compliance with scheduling regulations.
+
+2. Scope
+The scope covers a client-side web application for identifying valid swaps. This includes:
+
+Parsing and interpreting residency schedule data provided in HTML table format.
+
+Storing resident information, including PGY level.
+
+Implementing the swap validation rules and constraints entirely within the browser.
+
+Providing a user interface for selecting a resident, a date, and viewing potential valid swaps for that date.
+
+Handling data input via hardcoded structures within the application's code or potentially via user pasting into designated areas.
+
+Out of Scope:
+
+Server-side backend or database persistence.
+
+User authentication and accounts.
+
+Automated notification system (email, in-app).
+
+Formal approval workflows beyond the core validation logic.
+
+Handling the "future payback" aspect of swaps (the system only validates the immediate day-for-day swap).
+
+Saving swap results or user preferences between sessions.
+
+3. Definitions
+Resident: An individual listed in the schedule (e.g., Bulsara, Kishen). Each resident has an associated PGY level.
+
+Assignment: The specific rotation, task, or status assigned to a resident on a given day (e.g., NSLIJ:DM:IM:Team-NS-2-S, OFF, CARD:El-Cards-LIJ, NSLIJ:DM:IM:Clinic-865).
+
+Schedule: A dataset mapping residents to assignments for a range of dates, derived from the input HTML tables.
+
+PGY Level: Postgraduate Year level (e.g., PGY1, PGY2, PGY3). This determines swap eligibility.
+
+Required Assignment: An assignment generally considered mandatory and less flexible for swapping (e.g., MICU-*, Team-*, Clinic-*). See Section 7 for specifics.
+
+Elective Assignment: An assignment offering more flexibility, often subject-specific or research-oriented (e.g., El-*, EI-*). See Section 7 for specifics.
+
+Swappable Assignment: An assignment that is permitted to be exchanged between residents, subject to constraints.
+
+Non-Swappable Assignment: An assignment that cannot be exchanged.
+
+Working Day: Any day a resident has an assignment other than OFF, Vacation, NSLIJ:DM:IM:Board-Prep. Saturdays and Sundays are not considered working days for residents on Elective rotations (except potentially CARD:CCU-* - TBC), even if not explicitly marked OFF.
+
+Swap: An exchange of assignments between two residents (Resident A and Resident B) for the same single calendar day. Resident A takes Resident B's original assignment, and Resident B takes Resident A's original assignment for that day.
+
+4. Data Requirements
+Schedule Data:
+
+Format: Provided as HTML <table> structures (potentially multiple tables covering different date ranges or resident groups).
+
+Content: Must include Date headers (parsable, e.g., "Mon
+
+5-5"), Resident Names (first column), and Assigned Rotation/Task Code in table cells (<td>). Weekend columns might have background color indicators (e.g., bgcolor="#ffdc64").
+
+Source: Hardcoded within the web application's JavaScript or pasted into a designated <textarea> by the user/administrator.
+
+Frequency: Updated manually within the application's code or via paste when the schedule changes (every few months).
+
+Resident PGY Data:
+
+Format: A simple data structure (e.g., JavaScript object or array) mapping resident names (matching exactly those in the schedule tables) to their PGY Level (1, 2, or 3).
+
+Source: Hardcoded within the web application's JavaScript.
+
+Frequency: Updated manually when resident PGY levels change or new residents are added.
+
+Assignment Classification Data:
+
+Format: A JavaScript object or similar structure mapping assignment codes (or patterns) to their type (Required, Elective, OFF, etc.) and swappability status/rules.
+
+Source: Hardcoded within the web application's JavaScript based on Section 7.
+
+5. Functional Requirements
+FR1: Load & Parse Data: The application must load the hardcoded (or pasted) HTML schedule tables and PGY data on startup. It must parse the HTML tables to create an internal JavaScript data structure representing the schedule (e.g., {'Resident Name': {'YYYY-MM-DD': 'Assignment Code', ...}, ...}). It must also parse the PGY data.
+
+FR2: User Interface - Input:
+
+Display a dropdown list of all residents parsed from the schedule.
+
+Provide a date picker or dropdown allowing the user to select a date within the range covered by the schedule data.
+
+FR3: User Interface - Trigger Swap Search: Provide a button (e.g., "Find Swaps") for the user to initiate the search after selecting a resident and date.
+
+FR4: Identify Potential Swaps: When triggered, identify the selected resident (User A) and their assignment (Assignment A) on the selected date (Date X). Find all other residents (Users B) and their assignments (Assignments B) on Date X.
+
+FR5: Validate Swap: For each potential swap, apply the validation logic defined in Section 6 using the parsed schedule and PGY data.
+
+FR6: User Interface - Display Results: Display the results clearly to the user. This should list:
+
+The resident and date selected for the swap.
+
+The original assignment of the selected resident.
+
+A list of valid swap partners (Resident B Name) and their original assignment (Assignment B) for that date.
+
+If no valid swaps are found, display a clear message indicating this.
+
+6. Business Rules & Constraints
+A swap between Resident A (PGY A, Assignment A on Date X) and Resident B (PGY B, Assignment B on Date X) is VALID if and only if ALL of the following conditions are met:
+
+C1: 7-Day Rule:
+
+The swap must not result in Resident A working 7 consecutive days immediately following the swap.
+
+The swap must not result in Resident B working 7 consecutive days immediately following the swap.
+
+"Working Day" is defined in Section 3. The check must consider the 7 days before and after the swap date to correctly assess consecutive work blocks.
+
+Weekend Handling: Saturdays and Sundays for residents on Elective assignments (excluding CARD:CCU-* - TBC) do not count as working days for this rule, regardless of the assignment listed (unless it's explicitly OFF, Vacation, or Board-Prep which are already excluded).
+
+C2: Assignment Swappability:
+
+Both Assignment A and Assignment B must be classified as 'Swappable' (See Section 7).
+
+Assignments explicitly classified as 'Non-Swappable' (e.g., Clinic-*, Vacation, LOA-Medical) cannot be part of any swap.
+
+C3: PGY Level Restrictions:
+
+If PGY A is PGY1, then PGY B must be PGY1.
+
+If PGY A is PGY2, then PGY B must be PGY2 or PGY3.
+
+If PGY A is PGY3, then PGY B must be PGY2 or PGY3.
+
+C4: MAR Shift Restriction:
+
+If Assignment A is a MAR-* shift, Resident B must be PGY3.
+
+If Assignment B is a MAR-* shift, Resident A must be PGY3.
+
+C5: Board Prep Restriction:
+
+If either Assignment A or Assignment B is NSLIJ:DM:IM:Board-Prep, both Resident A and Resident B must be PGY3.
+
+C6: OFF Day Swaps: Swaps involving an OFF assignment are permitted, provided C1-C5 are met.
+
+7. Assignment Classification (Preliminary - Requires Confirmation)
+This table defines the rules for determining if an assignment is swappable and its type. This will be implemented in the application's logic. Stakeholder confirmation is needed for items marked 'Assumed' or 'Needs Confirmation'.
+
+Assignment Pattern
+
+Type
+
+Swappable
+
+PGY Rules (if any)
+
+Notes
+
+OFF
+
+Status
+
+Yes
+
+None
+
+Can be swapped if rules met. Not a working day.
+
+NSLIJ:DM:IM:Vacation
+
+Status
+
+No
+
+N/A
+
+Cannot be swapped. Not a working day.
+
+NSLIJ:DM:IM:LOA-Medical
+
+Status
+
+No
+
+N/A
+
+Cannot be swapped. Not a working day.
+
+NSLIJ:DM:IM:Clinic-*
+
+Required
+
+No
+
+N/A
+
+Cannot be swapped. Is a working day.
+
+NSLIJ:DM:PULM:MICU-*
+
+Required
+
+No (Assumed)
+
+N/A
+
+Needs Confirmation. Assumed working day.
+
+NSLIJ:DM:IM:Team-*
+
+Required
+
+No (Assumed)
+
+N/A
+
+Needs Confirmation. Assumed working day.
+
+El-* (e.g., El-Research)
+
+Elective
+
+Yes
+
+None
+
+Standard elective. Working day (Mon-Fri).
+
+EI-* (e.g., EI-Pulm-LIJ)
+
+Elective
+
+Yes
+
+None
+
+Assumed Elective. Working day (Mon-Fri).
+
+CARD:El-*
+
+Elective
+
+Yes
+
+None
+
+Cardiology Elective. Working day (Mon-Fri).
+
+CARD:CCU-*
+
+Elective
+
+Yes
+
+None
+
+CCU Elective. Confirm Sat/Sun working status. Default: Mon-Fri work.
+
+NSLIJ:DM:IM:MAR-*
+
+Required
+
+Yes (Conditional)
+
+Recipient must be PGY3.
+
+Medical Admitting Resident shifts. Is a working day.
+
+DN:Neuro*
+
+Required
+
+No (Assumed)
+
+N/A
+
+Neurology. Needs Confirmation. Assumed working day.
+
+NSLIJ:DM:IM:Board-Prep
+
+Status
+
+Yes (Conditional)
+
+Both residents must be PGY3
+
+Can be swapped by PGY3s with PGY3s. Not a working day.
+
+NSLIJ:DM:IM:Uganda
+
+Elective
+
+Yes (Assumed)
+
+None
+
+International Elective. Needs Confirmation. Assumed working day (Mon-Fri).
+
+NSLIJ:DM:IM:Chief
+
+Admin
+
+No (Assumed)
+
+N/A
+
+Chief Resident duties. Needs Confirmation. Assumed working day.
+
+NSLIJ:DM:GERI:El-Geri
+
+Elective
+
+Yes
+
+None
+
+Geriatrics Elective. Working day (Mon-Fri).
+
+NSLIJ:DM:GI:El-GI-*
+
+Elective
+
+Yes
+
+None
+
+GI Elective. Working day (Mon-Fri).
+
+NSLIJ:DM:HO:El-HemOnc-NS
+
+Elective
+
+Yes
+
+None
+
+Hem/Onc Elective. Working day (Mon-Fri).
+
+NSLIJ:DM:ID:El-ID-NS
+
+Elective
+
+Yes
+
+None
+
+ID Elective. Working day (Mon-Fri).
+
+NSLIJ:DM:IM:El-Procedure-LIJ
+
+Elective
+
+Yes
+
+None
+
+Procedure Elective. Working day (Mon-Fri).
+
+NSLIJ:DM:IM:El-Pri-Care
+
+Elective
+
+Yes
+
+None
+
+Primary Care Elective. Working day (Mon-Fri).
+
+NSLIJ:DM:IM:Valley-Stream...
+
+Elective
+
+Yes (Assumed)
+
+None
+
+VS Elective. Needs Confirmation. Assumed working day (Mon-Fri).
+
+NSLIJ:DM:PULM:El-Pulm-NS
+
+Elective
+
+Yes
+
+None
+
+Pulm Elective. Working day (Mon-Fri).
+
+Other unique codes
+
+TBD
+
+TBD
+
+TBD
+
+Any other codes need classification.
+
+8. User Interaction Flow (High-Level Backend Perspective)
+(This section describes the backend logic flow, which will be implemented in client-side JavaScript)
+
+User selects Resident A from a dropdown.
+
+User selects Date X using a date picker.
+
+User clicks "Find Swaps".
+
+JavaScript retrieves Resident A's PGY level (PGY A) and Assignment A for Date X from the parsed data structures.
+
+JavaScript checks if Assignment A is swappable (Rule C2). If not, display "Assignment not swappable" and stop.
+
+JavaScript iterates through all other Residents B stored in the parsed data.
+
+For each Resident B:
+
+Retrieve Resident B's PGY level (PGY B) and Assignment B for Date X.
+
+Check if Assignment B is swappable (Rule C2). If not, continue to the next resident.
+
+Check PGY compatibility (Rule C3). If not compatible, continue.
+
+Check MAR restrictions (Rule C4). If invalid, continue.
+
+Check Board Prep restrictions (Rule C5). If invalid, continue.
+
+Simulate Swap & Check 7-Day Rule (Rule C1):
+
+Create temporary copies of the relevant date ranges for Resident A and Resident B.
+
+Apply the swap to these temporary copies.
+
+Check the 7-day rule for both residents using the simulated schedules. The check involves looking at assignments up to 6 days before and 6 days after Date X.
+
+If the 7-day rule is violated for either resident, discard this potential swap and continue to the next resident.
+
+If all checks pass, add {Resident B Name, Assignment B Code} to a list of valid swaps.
+
+JavaScript updates the results area of the UI, displaying the list of valid swaps or a "No valid swaps found" message.
+
+9. Assumptions
+A1: PGY Data Availability: PGY level data for each resident will be provided and maintained accurately within the application's code.
+
+A2: Unique Resident Names: Resident names in the schedule tables and PGY data are unique and match exactly (including spacing, commas, etc.).
+
+A3: Schedule Accuracy & Format: The provided HTML schedule tables are accurate and consistently formatted (resident names in the first column, dates in the header row, assignments in <td> cells). The date format in the header is parsable (e.g., "Mon
+
+M-D").
+
+A4: Assignment Code Consistency: Assignment codes are used consistently.
+
+A5: Definition of "Working Day": The definition in Section 3 and classifications in Section 7 are correct, especially regarding weekends for electives.
+
+A6: Swappability Classifications: The classifications in Section 7 are correct or will be confirmed.
+
+A7: CARD:CCU Weekend Rule: Assumed CARD:CCU elective follows standard elective weekend rule (Sat/Sun non-working) unless confirmed otherwise.
+
+A8: Single Day Swaps Only: The system only handles swaps for a single, identical calendar date.
+
+A9: Browser Compatibility: The application will target modern web browsers capable of running ES6+ JavaScript and Tailwind CSS.
+
+A10: Performance: For very large schedules or date ranges, parsing and validation performance entirely on the client-side might become a consideration, but is assumed acceptable for typical residency block schedules.
+
+A11: Date Parsing Robustness: The JavaScript logic must reliably parse the dates from the HTML table headers, potentially requiring a library like date-fns (included in tech spec) to handle year ambiguity and formatting. Assume the schedule year is the current year or determinable contextually.
+
+10. Technical Implementation Specification (Web App)
+10.1 Technology Stack:
+
+HTML: Standard HTML5 for structure.
+
+CSS: Tailwind CSS for styling and layout (loaded via CDN). Custom CSS minimal, only if necessary.
+
+JavaScript: Modern JavaScript (ES6+) for all logic, including parsing, validation, and DOM manipulation. No frameworks (like React, Vue, Angular) required initially.
+
+Libraries: date-fns (via CDN) recommended for robust date parsing and manipulation.
+
+10.2 Architecture:
+
+Client-Side Only: The entire application runs within the user's web browser.
+
+No Backend/Database: No server-side processing or data storage is required. Schedule and PGY data are embedded or pasted. State is ephemeral and resets on page load.
+
+10.3 Data Handling:
+
+Schedule Data: HTML <table> strings will be stored in JavaScript variables. A parsing function will convert these tables into a structured JavaScript object (e.g., nested objects: scheduleData[residentName][dateString] = assignmentCode).
+
+PGY Data: Stored as a simple JavaScript object (e.g., pgyData = {'Resident Name': PGYLevel, ...}).
+
+Assignment Rules: Stored as JavaScript objects/functions for easy lookup and rule application.
+
+10.4 Core JavaScript Components (Conceptual Modules/Functions):
+
+parser.js: Functions to parse the HTML table strings and PGY data into usable JavaScript objects. Includes date parsing logic (using date-fns).
+
+rules.js: Functions implementing the business rules and constraints (7-day rule check, PGY check, assignment swappability check, MAR/Board Prep checks). Includes logic to determine if a day is a "working day" based on assignment type and day of the week.
+
+swapFinder.js: The main engine logic that takes user input (resident, date), iterates through potential swaps, calls validation functions from rules.js, and returns valid results.
+
+ui.js (or inline in HTML <script>): Handles DOM manipulation – populating dropdowns, getting user selections, displaying results, handling button clicks.
+
+10.5 File Structure (Conceptual):
+
+index.html: Main HTML file containing the structure, UI elements (dropdowns, date picker, results area), and potentially text areas for pasting data.
+
+js/ directory:
+
+data.js (optional): Could hold the hardcoded schedule HTML strings and PGY object.
+
+parser.js
+
+rules.js
+
+swapFinder.js
+
+main.js (or app.js): Entry point script, orchestrates UI interactions and calls other modules.
+
+(Tailwind loaded via CDN, no local CSS file needed initially).
+
+10.6 UI Elements (HTML):
+
+Dropdown (<select>) for selecting the resident initiating the swap.
+
+Date input (<input type="date">) for selecting the swap date.
+
+Button (<button>) to trigger the search.
+
+A results area (<div>) to display the original assignment and the list of valid swaps (resident name and their assignment).
+
+Optional: <textarea> elements for pasting schedule HTML and PGY data if not hardcoding.
+
+11. Future Considerations
+User interface improvements (better styling, feedback).
+
+Saving/loading data using browser local storage.
+
+Adding features to propose or confirm swaps (though this moves towards needing persistence).
+
+Error handling for malformed input data.
+
+Mechanism for handling multi-day swaps or block swaps.
+
+Visual representation of the schedule.

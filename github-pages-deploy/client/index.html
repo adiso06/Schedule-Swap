@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./generated-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Residency Swap</title>
+    <meta name="description" content="A sophisticated client-side web application for healthcare professionals to manage complex residency schedule swaps with advanced scheduling intelligence." />
+    <script>
+      // Check if redirected from 404 page
+      window.addEventListener('DOMContentLoaded', function() {
+        var redirectPath = sessionStorage.getItem('redirect-path');
+        if (redirectPath) {
+          console.log('Redirected from 404 page, path:', redirectPath);
+          sessionStorage.removeItem('redirect-path');
+          // Use history API to update the URL without reloading
+          var basePath = window.location.pathname.includes('/swap') ? '/swap/' : '/';
+          if (redirectPath && redirectPath !== '/') {
+            history.replaceState(null, null, basePath + redirectPath.substring(1));
+          }
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>
