@@ -378,9 +378,10 @@ export const demoScheduleHTML = `
  * This should be replaced with actual PGY data corresponding to the schedule.
  */
 export const demoPGYData: { [name: string]: PGYLevel } = {
-  // Example (replace with actual data matching demoScheduleHTML or your actual schedule):
-  // "Bulsara, Kishen": 2,
-  // ...
+  "Achuonjei, Joy": 1 as PGYLevel,
+  "Annesi, Thomas": 2 as PGYLevel,
+  "Babadzhanov, Marianna": 3 as PGYLevel,
+  "Bevagna, Holly": 1 as PGYLevel,
 };
 
 // --- Helper Functions ---

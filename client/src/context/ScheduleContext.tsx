@@ -305,7 +305,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       if (Object.keys(demoPGYData).length > 0) {
         for (const name in demoPGYData) {
           if (!pgyLevels[name]) {
-            pgyLevels[name] = demoPGYData[name];
+            pgyLevels[name] = demoPGYData[name] as PGYLevel;
           }
         }
       }

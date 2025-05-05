@@ -56,27 +56,24 @@ export default function ScheduleVisualization() {
   
   return (
     <>
-      <div className="border-b border-gray-200 bg-gray-50 px-4 py-3 flex items-center justify-between">
-        <h2 className="text-lg font-medium text-gray-800">Schedule</h2>
-        <div className="flex space-x-2">
-          <button
-            id="prev-week-btn"
-            className="text-gray-500 hover:text-gray-700 p-1"
-            onClick={() => navigateWeek("prev")}
-          >
-            <i className="ri-arrow-left-s-line"></i>
-          </button>
-          <span id="week-display" className="text-sm font-medium">
-            {getWeekDisplay(currentStartDate)}
-          </span>
-          <button
-            id="next-week-btn"
-            className="text-gray-500 hover:text-gray-700 p-1"
-            onClick={() => navigateWeek("next")}
-          >
-            <i className="ri-arrow-right-s-line"></i>
-          </button>
-        </div>
+      <div className="flex items-center justify-end space-x-2 px-4 py-3 bg-white border-b border-gray-200">
+        <button
+          id="prev-week-btn"
+          className="text-gray-500 hover:text-gray-700 p-1"
+          onClick={() => navigateWeek("prev")}
+        >
+          <i className="ri-arrow-left-s-line"></i>
+        </button>
+        <span id="week-display" className="text-sm font-medium">
+          {getWeekDisplay(currentStartDate)}
+        </span>
+        <button
+          id="next-week-btn"
+          className="text-gray-500 hover:text-gray-700 p-1"
+          onClick={() => navigateWeek("next")}
+        >
+          <i className="ri-arrow-right-s-line"></i>
+        </button>
       </div>
       
       {!hasDataForWeek ? (
