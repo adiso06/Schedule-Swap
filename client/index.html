@@ -1,54 +1,29 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>Residency Schedule Swap Engine</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    
-    <!-- Script to handle GitHub Pages SPA routing -->
+    <link rel="icon" type="image/svg+xml" href="./generated-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Residency Swap</title>
+    <meta name="description" content="A sophisticated client-side web application for healthcare professionals to manage complex residency schedule swaps with advanced scheduling intelligence." />
     <script>
-      // Check if we came from a redirect
-      (function() {
+      // Check if redirected from 404 page
+      window.addEventListener('DOMContentLoaded', function() {
         var redirectPath = sessionStorage.getItem('redirect-path');
         if (redirectPath) {
-          // Clear the stored path
+          console.log('Redirected from 404 page, path:', redirectPath);
           sessionStorage.removeItem('redirect-path');
-          
-          // Get current path
-          var currentPath = window.location.pathname;
-          
-          // Check if we're in the /swap subdirectory
-          var inSwapPath = currentPath.includes('/swap');
-          
-          // Determine the base path for history replacement
-          var basePath = inSwapPath ? '/swap' : '';
-          
-          // Replace the current history state with the redirect path
-          // This makes the browser URL show the correct path
-          if (redirectPath !== '/' && redirectPath !== '/404.html') {
-            window.history.replaceState(null, null, basePath + redirectPath);
+          // Use history API to update the URL without reloading
+          var basePath = window.location.pathname.includes('/swap') ? '/swap/' : '/';
+          if (redirectPath && redirectPath !== '/') {
+            history.replaceState(null, null, basePath + redirectPath.substring(1));
           }
         }
-      })();
+      });
     </script>
   </head>
   <body>
     <div id="root"></div>
-    <!-- Use base path to ensure assets load correctly -->
-    <script>
-      // Get the base path dynamically
-      var basePath = window.location.pathname.includes('/swap') ? '/swap' : '';
-      
-      // Create and append the main script with the correct path
-      var mainScript = document.createElement('script');
-      mainScript.type = 'module';
-      mainScript.src = basePath + '/src/main.tsx';
-      document.body.appendChild(mainScript);
-    </script>
-    
-    <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
-    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+    <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>
