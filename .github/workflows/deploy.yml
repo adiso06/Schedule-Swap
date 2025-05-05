@@ -33,13 +33,54 @@ jobs:
       - name: Build for GitHub Pages
         run: npm run build:gh-pages
 
+      - name: Create .nojekyll file
+        run: touch ./dist/.nojekyll
+
+      - name: Create GitHub Pages repository root
+        run: |
+          # Create directory structure for GitHub Pages
+          mkdir -p ./gh-pages-root/Schedule-Swap/swap
+          
+          # Copy the built files to the swap subdirectory
+          cp -r ./dist/* ./gh-pages-root/Schedule-Swap/swap/
+          
+          # Create a redirect at the root
+          cat > ./gh-pages-root/index.html << EOF
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <title>Schedule Swap</title>
+              <meta http-equiv="refresh" content="0;url=./Schedule-Swap/swap/" />
+            </head>
+            <body>
+              Redirecting to application...
+            </body>
+          </html>
+          EOF
+          
+          # Create a redirect at the repository root
+          cat > ./gh-pages-root/Schedule-Swap/index.html << EOF
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <title>Schedule Swap</title>
+              <meta http-equiv="refresh" content="0;url=./swap/" />
+            </head>
+            <body>
+              Redirecting to application...
+            </body>
+          </html>
+          EOF
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: './gh-pages-root'
 
   deploy:
     environment:
