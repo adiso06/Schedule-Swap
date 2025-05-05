@@ -157,7 +157,7 @@ function checkIsWeekend(date: Date): boolean {
 /**
  * Extract PGY levels from the Excel data
  */
-function extractPgyLevels(lines: string[]): { [name: string]: PGYLevel } {
+export function extractPgyLevels(lines: string[]): { [name: string]: PGYLevel } {
   const pgyLevels: { [name: string]: PGYLevel } = {};
 
   for (let i = 2; i < lines.length; i++) { // Start from row 3 (index 2)
@@ -169,12 +169,28 @@ function extractPgyLevels(lines: string[]): { [name: string]: PGYLevel } {
     
     if (residentName && pgyLevelStr) {
       // Extract PGY level (e.g., "PGY-1" => 1)
+      let pgyLevel: PGYLevel | null = null;
+      
+      // Try matching different PGY level formats
       const pgyMatch = pgyLevelStr.match(/PGY-?(\d+)/i);
       if (pgyMatch) {
-        pgyLevels[residentName] = parseInt(pgyMatch[1], 10) as PGYLevel;
+        pgyLevel = parseInt(pgyMatch[1], 10) as PGYLevel;
+      } else if (pgyLevelStr === "1" || pgyLevelStr === "2" || pgyLevelStr === "3") {
+        pgyLevel = parseInt(pgyLevelStr, 10) as PGYLevel;
+      } else if (pgyLevelStr.toLowerCase().includes("pgy") && pgyLevelStr.includes("1")) {
+        pgyLevel = 1;
+      } else if (pgyLevelStr.toLowerCase().includes("pgy") && pgyLevelStr.includes("2")) {
+        pgyLevel = 2;
+      } else if (pgyLevelStr.toLowerCase().includes("pgy") && pgyLevelStr.includes("3")) {
+        pgyLevel = 3;
+      }
+      
+      if (pgyLevel) {
+        pgyLevels[residentName] = pgyLevel;
       }
     }
   }
-
+  
+  console.log("Extracted PGY levels from Excel:", pgyLevels);
   return pgyLevels;
 }

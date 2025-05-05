@@ -140,49 +140,64 @@ export default function ScheduleImportPanel() {
     reader.readAsText(file);
   };
 
-  // Load default schedule on first render
-  const loadDefaultDataRef = useRef(false);
-  
+  // Load default schedule or last saved schedule on component mount
   useEffect(() => {
-    // Only run this once
-    if (loadDefaultDataRef.current) return;
-    loadDefaultDataRef.current = true;
+    console.log("ScheduleImportPanel mounted, checking for data to load...");
     
-    // Use a small timeout to ensure all components are mounted
-    const timer = setTimeout(() => {
-      // Only load if no schedule is currently loaded
-      if (!hasScheduleData) {
+    // Only load if no schedule is currently loaded
+    if (!hasScheduleData) {
+      console.log("No schedule data loaded, looking for saved schedules...");
+      
+      // Check if we have any saved schedules
+      const savedSchedules = getAllSavedSchedules();
+      
+      if (savedSchedules.length > 0) {
+        // Load the most recently saved schedule
+        console.log(`Found ${savedSchedules.length} saved schedules, loading most recent...`);
+        const mostRecent = savedSchedules.sort((a, b) => {
+          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+        })[0];
+        
         try {
-          // Check if we have any saved schedules
-          const savedSchedules = getAllSavedSchedules();
-          
-          if (savedSchedules.length > 0) {
-            // Load the most recently saved schedule
-            const mostRecent = savedSchedules.sort((a, b) => {
-              return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-            })[0];
-            
-            loadSchedule(mostRecent.id);
-            toast({
-              title: "Schedule Loaded",
-              description: `Previously saved schedule "${mostRecent.name}" loaded automatically.`
-            });
-          } else {
-            // Load the default schedule data
-            parseSchedule(defaultScheduleData, true);
-            toast({
-              title: "Default Schedule Loaded",
-              description: "The default schedule has been loaded automatically.",
-            });
-          }
+          loadSchedule(mostRecent.id);
+          toast({
+            title: "Schedule Loaded",
+            description: `Previously saved schedule "${mostRecent.name}" loaded automatically.`
+          });
         } catch (error) {
-          console.error("Error loading default schedule:", error);
+          console.error("Error loading saved schedule:", error);
+          
+          // If loading saved schedule fails, try the default data
+          loadDefaultData();
         }
+      } else {
+        // No saved schedules, load the default data
+        console.log("No saved schedules found, loading default schedule data...");
+        loadDefaultData();
       }
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    } else {
+      console.log("Schedule data already loaded, skipping auto-load");
+    }
+  }, [hasScheduleData]);
+  
+  // Function to load default schedule data
+  const loadDefaultData = () => {
+    console.log("Loading default schedule data...");
+    try {
+      parseSchedule(defaultScheduleData, true);
+      toast({
+        title: "Default Schedule Loaded",
+        description: "The default residency schedule has been loaded automatically.",
+      });
+    } catch (error) {
+      console.error("Error loading default schedule:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not load the default schedule data."
+      });
+    }
+  };
 
   return (
     <div className="mb-6">
