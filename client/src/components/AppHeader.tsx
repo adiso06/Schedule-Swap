@@ -21,15 +21,9 @@ export default function AppHeader() {
                   Swap Finder
                 </div>
               </Link>
-              <Link href="/payback-swaps">
-                <div className={`flex items-center text-sm font-medium ${location === '/payback-swaps' ? 'text-primary-600 border-b-2 border-primary-500' : 'text-gray-500 hover:text-gray-700'}`}>
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                  Payback Swaps
-                </div>
-              </Link>
             </nav>
             <div>
-              <span className="text-sm text-gray-500">v1.2</span>
+              <span className="text-sm text-gray-500">v1.3</span>
             </div>
           </div>
         </div>

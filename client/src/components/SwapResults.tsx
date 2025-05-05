@@ -52,6 +52,14 @@ export default function SwapResults() {
           description: `Found ${results.length} potential payback dates.`
         });
       }
+      
+      // Scroll to payback results container
+      setTimeout(() => {
+        const paybackResultsContainer = document.getElementById('payback-results-container');
+        if (paybackResultsContainer) {
+          paybackResultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -109,7 +117,7 @@ export default function SwapResults() {
             </p>
           </div>
         ) : paybackSwaps.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div id="payback-results-container" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {paybackSwaps.map((payback, index) => (
               <div key={index} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition">
                 <div className="border-b border-gray-200 bg-blue-50 px-4 py-3">
@@ -160,7 +168,7 @@ export default function SwapResults() {
             ))}
           </div>
         ) : (
-          <div className="py-16 flex flex-col items-center justify-center">
+          <div id="payback-results-container" className="py-16 flex flex-col items-center justify-center">
             <div className="bg-yellow-50 border border-yellow-100 rounded-full p-3 mb-4">
               <Clock className="h-6 w-6 text-yellow-500" />
             </div>

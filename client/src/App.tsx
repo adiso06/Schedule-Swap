@@ -6,14 +6,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ScheduleProvider } from "./context/ScheduleContext";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
-import PaybackSwapPage from "@/pages/PaybackSwapPage";
 import Footer from "@/components/Footer";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/payback-swaps" component={PaybackSwapPage} />
       <Route component={NotFound} />
     </Switch>
   );
