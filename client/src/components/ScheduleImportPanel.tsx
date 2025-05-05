@@ -24,12 +24,18 @@ export default function ScheduleImportPanel() {
     setIsLoading(true);
     
     try {
-      parseSchedule(scheduleHtml);
+      // Check if the input contains <table> tags
+      const html = scheduleHtml.includes("<table") 
+        ? scheduleHtml 
+        : `<table border="1">${scheduleHtml}</table>`;
+        
+      parseSchedule(html);
       toast({
         title: "Success",
         description: "Schedule parsed successfully",
       });
     } catch (error) {
+      console.error("Parsing error:", error);
       toast({
         variant: "destructive",
         title: "Parsing Error",
@@ -46,6 +52,33 @@ export default function ScheduleImportPanel() {
       title: "Demo Data Loaded",
       description: "Demo schedule data has been loaded. Click 'Parse Schedule' to process it.",
     });
+  };
+
+  // Parse pasted text
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    // Get the pasted text
+    const pastedText = e.clipboardData.getData('text');
+    
+    // Check if it looks like HTML
+    if (pastedText.includes('<table') || pastedText.includes('<tr') || pastedText.includes('<td')) {
+      setScheduleHtml(pastedText);
+      
+      // Optional: auto-parse immediately
+      /*
+      setTimeout(() => {
+        try {
+          parseSchedule(pastedText);
+          toast({
+            title: "Success",
+            description: "Schedule data pasted and parsed automatically",
+          });
+        } catch (error) {
+          // Just log the error but don't show toast yet as user might be still editing
+          console.error("Auto-parse error:", error);
+        }
+      }, 500);
+      */
+    }
   };
 
   // Auto-parse demo data when loaded
@@ -68,29 +101,65 @@ export default function ScheduleImportPanel() {
     }, 100);
   };
 
+  // Import directly from file
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      setScheduleHtml(content);
+      toast({
+        title: "File Imported",
+        description: "HTML file loaded. Click 'Parse Schedule' to process it.",
+      });
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="mb-6">
       <h2 className="text-lg font-medium text-gray-800 mb-3">Import Schedule</h2>
       <div className="space-y-4">
         <div>
-          <label htmlFor="schedule-data" className="block text-sm font-medium text-gray-700 mb-1">
-            Schedule HTML Data
-          </label>
+          <div className="flex justify-between items-center mb-1">
+            <label htmlFor="schedule-data" className="block text-sm font-medium text-gray-700">
+              Schedule HTML Table
+            </label>
+            <label 
+              htmlFor="file-import" 
+              className="text-xs text-blue-600 cursor-pointer hover:text-blue-800"
+            >
+              Import from file
+            </label>
+            <input 
+              type="file" 
+              id="file-import" 
+              accept=".html,.htm,.txt" 
+              className="hidden" 
+              onChange={handleFileImport} 
+            />
+          </div>
           <Textarea
             id="schedule-data"
-            rows={6}
-            className="w-full rounded-md border border-gray-300 text-sm"
+            rows={8}
+            className="w-full rounded-md border border-gray-300 text-sm font-mono"
             placeholder="Paste schedule HTML table here..."
             value={scheduleHtml}
             onChange={(e) => setScheduleHtml(e.target.value)}
+            onPaste={handlePaste}
           />
+          <p className="text-xs text-gray-500 mt-1">
+            Paste HTML table content directly from Excel, websites, or other sources
+          </p>
         </div>
         
         <div className="flex space-x-2">
           <Button
             id="parse-schedule-btn"
             variant="default"
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium"
             onClick={handleParseSchedule}
             disabled={isLoading || !scheduleHtml.trim()}
           >
@@ -102,6 +171,7 @@ export default function ScheduleImportPanel() {
             variant="secondary"
             className="bg-gray-200 hover:bg-gray-300 text-gray-800"
             onClick={handleLoadAndParse}
+            disabled={isLoading}
           >
             Load & Parse Demo
           </Button>
@@ -111,7 +181,7 @@ export default function ScheduleImportPanel() {
           <button
             id="load-demo-data-btn"
             type="button"
-            className="text-blue-600 text-sm hover:text-blue-800 flex items-center"
+            className="text-blue-600 text-xs hover:text-blue-800 flex items-center"
             onClick={loadDemoData}
           >
             Load Demo Data Only
