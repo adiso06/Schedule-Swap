@@ -4,7 +4,7 @@
  */
 
 // Determine if we're running in GitHub Pages environment
-const isGitHubPages = import.meta.env.GITHUB_PAGES === 'true';
+const isGitHubPages = import.meta.env.GITHUB_PAGES === 'true' || window.location.pathname.includes('/swap');
 
 // Set the base path for GitHub Pages deployment
 export const BASE_PATH = isGitHubPages ? '/swap' : '';

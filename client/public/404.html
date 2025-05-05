@@ -11,16 +11,19 @@
       var path = window.location.pathname;
       
       // Check if we're in the /swap subdirectory
-      var inSwapPath = path.startsWith('/swap/');
+      var inSwapPath = path.includes('/swap/');
       
       // Determine the base path
       var basePath = inSwapPath ? '/swap' : '';
       
       // Remove the base path to get the actual route
-      var route = inSwapPath ? path.substr(5) : path;
+      var route = inSwapPath ? path.substring(path.indexOf('/swap') + 5) : path;
       
       // Store the path in session storage for the main page to use
       sessionStorage.setItem('redirect-path', route);
+      
+      // Log for debugging
+      console.log('404 Redirect - Path:', path, 'Base Path:', basePath, 'Route:', route);
       
       // Redirect to the index page with the correct base path
       window.location.replace(basePath + '/');
