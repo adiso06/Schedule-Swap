@@ -1,12 +1,29 @@
-import React, { useState } from "react";
-import { useSchedule } from "@/hooks/useSchedule";
-import { formatDateToYYYYMMDD, getWeekDisplay } from "@/lib/utils";
+import React, { useState, useMemo } from "react";
+import { useSchedule } from "@/context/ScheduleContext";
+import { formatDateToYYYYMMDD, getWeekDisplay, formatDateForDisplay } from "@/lib/utils";
 import { addDays, startOfWeek, parseISO, format } from "date-fns";
 import { getUserFriendlyLabel } from "@/lib/assignmentLabels";
+import { Badge } from "@/components/ui/badge";
 
 export default function ScheduleVisualization() {
   const { state } = useSchedule();
-  const { schedule, metadata, residents } = state;
+  const { schedule, metadata, residents, validSwaps, currentResident, currentDate } = state;
+  
+  // Filter residents based on swap results if a search has been performed
+  const filteredResidents = useMemo(() => {
+    // If no search has been performed, show all residents
+    if (!currentResident || !currentDate || validSwaps.length === 0) {
+      return Object.keys(residents);
+    }
+    
+    // Otherwise, only show the current resident and residents with valid swaps
+    const residentSet = new Set<string>([
+      currentResident,
+      ...validSwaps.map(swap => swap.residentB)
+    ]);
+    
+    return Array.from(residentSet);
+  }, [residents, validSwaps, currentResident, currentDate]);
   
   // Show a week at a time starting from the first date
   const [currentStartDate, setCurrentStartDate] = useState(() => {
@@ -56,24 +73,35 @@ export default function ScheduleVisualization() {
   
   return (
     <>
-      <div className="flex items-center justify-end space-x-2 px-4 py-3 bg-white border-b border-gray-200">
-        <button
-          id="prev-week-btn"
-          className="text-gray-500 hover:text-gray-700 p-1"
-          onClick={() => navigateWeek("prev")}
-        >
-          <i className="ri-arrow-left-s-line"></i>
-        </button>
-        <span id="week-display" className="text-sm font-medium">
-          {getWeekDisplay(currentStartDate)}
-        </span>
-        <button
-          id="next-week-btn"
-          className="text-gray-500 hover:text-gray-700 p-1"
-          onClick={() => navigateWeek("next")}
-        >
-          <i className="ri-arrow-right-s-line"></i>
-        </button>
+      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
+        {/* Filter Info */}
+        {currentResident && currentDate && validSwaps.length > 0 && (
+          <div className="text-sm text-primary-700 flex items-center mr-4">
+            <Badge variant="outline" className="mr-2">Filtered</Badge>
+            Showing only residents with available swaps for {formatDateForDisplay(currentDate)}
+          </div>
+        )}
+        
+        {/* Navigation */}
+        <div className="flex items-center space-x-2 ml-auto">
+          <button
+            id="prev-week-btn"
+            className="text-gray-500 hover:text-gray-700 p-1"
+            onClick={() => navigateWeek("prev")}
+          >
+            <i className="ri-arrow-left-s-line"></i>
+          </button>
+          <span id="week-display" className="text-sm font-medium">
+            {getWeekDisplay(currentStartDate)}
+          </span>
+          <button
+            id="next-week-btn"
+            className="text-gray-500 hover:text-gray-700 p-1"
+            onClick={() => navigateWeek("next")}
+          >
+            <i className="ri-arrow-right-s-line"></i>
+          </button>
+        </div>
       </div>
       
       {!hasDataForWeek ? (
@@ -103,14 +131,17 @@ export default function ScheduleVisualization() {
               </tr>
             </thead>
             <tbody>
-              {Object.keys(residents).map((residentName) => (
-                <tr key={residentName} className="hover:bg-gray-50">
+              {filteredResidents.map((residentName) => (
+                <tr key={residentName} className={`hover:bg-gray-50 ${residentName === currentResident ? 'bg-blue-50' : ''}`}>
                   <td className="py-3 px-4 border-b border-r border-gray-200 font-medium truncate">
                     <div className="flex items-center">
                       <span>{residentName}</span>
                       <span className="ml-1 text-xs bg-primary-100 text-primary-800 px-1.5 rounded-full">
                         PGY{residents[residentName].pgyLevel}
                       </span>
+                      {currentResident && residentName === currentResident && (
+                        <Badge variant="outline" className="ml-2 text-xs">You</Badge>
+                      )}
                     </div>
                   </td>
                   {weekDays.map((day) => {
@@ -120,9 +151,11 @@ export default function ScheduleVisualization() {
                     return (
                       <td
                         key={day.dateStr}
-                        className={`py-2 px-2 border-b border-r border-gray-200 text-sm ${
-                          day.isWeekend ? "bg-yellow-50" : ""
-                        }`}
+                        className={`py-2 px-2 border-b border-r border-gray-200 text-sm 
+                          ${day.isWeekend ? "bg-yellow-50" : ""}
+                          ${day.dateStr === currentDate ? "bg-primary-50 border-primary-200" : ""}
+                          ${day.dateStr === currentDate && residentName === currentResident ? "ring-2 ring-inset ring-primary-300" : ""}
+                        `}
                         title={`${assignment?.code || ""} - ${friendlyLabel}`}
                       >
                         {assignment?.code ? (
