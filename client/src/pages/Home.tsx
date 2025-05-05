@@ -1,8 +1,8 @@
 import React from "react";
 import AppHeader from "@/components/AppHeader";
 import CollapsibleScheduleControls from "@/components/CollapsibleScheduleControls";
+import CollapsibleScheduleVisualization from "@/components/CollapsibleScheduleVisualization";
 import SwapFinderForm from "@/components/SwapFinderForm";
-import ScheduleVisualization from "@/components/ScheduleVisualization";
 import SwapResults from "@/components/SwapResults";
 import RulesModal from "@/components/RulesModal";
 
@@ -12,29 +12,34 @@ export default function Home() {
       <AppHeader />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow">
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-800">Residency Schedule Swap Engine</h1>
           <RulesModal />
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* First Row: Collapsible Schedule Controls */}
+          {/* First Row: Collapsible Schedule Controls (collapsed by default) */}
           <div className="lg:col-span-12">
             <CollapsibleScheduleControls />
           </div>
           
-          {/* Second Row: Swap Finder and Results */}
+          {/* Second Row: Swap Finder (Primary Focus) */}
           <div className="lg:col-span-4 bg-white rounded-lg shadow-sm p-5 border border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Find Available Swaps</h2>
+            <div className="bg-gradient-to-r from-primary-100 to-primary-50 -m-5 mb-5 p-5 rounded-t-lg border-b border-primary-200">
+              <h2 className="text-xl font-semibold text-primary-800">Find Available Swaps</h2>
+              <p className="text-sm text-primary-700 mt-1">Select a resident and date to find compatible swaps</p>
+            </div>
             <SwapFinderForm />
           </div>
           
+          {/* Swap Results Panel */}
           <div className="lg:col-span-8 bg-white rounded-lg shadow-sm p-6 border border-gray-200">
             <SwapResults />
           </div>
           
-          {/* Bottom Panel: Schedule Visualization */}
-          <div className="lg:col-span-12 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <ScheduleVisualization />
+          {/* Bottom Panel: Collapsible Schedule Visualization */}
+          <div className="lg:col-span-12">
+            <CollapsibleScheduleVisualization />
           </div>
         </div>
       </main>
