@@ -6,6 +6,33 @@
     <title>Residency Schedule Swap Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    
+    <!-- Script to handle GitHub Pages SPA routing -->
+    <script>
+      // Check if we came from a redirect
+      (function() {
+        var redirectPath = sessionStorage.getItem('redirect-path');
+        if (redirectPath) {
+          // Clear the stored path
+          sessionStorage.removeItem('redirect-path');
+          
+          // Get current path
+          var currentPath = window.location.pathname;
+          
+          // Check if we're in the /swap subdirectory
+          var inSwapPath = currentPath.includes('/swap');
+          
+          // Determine the base path for history replacement
+          var basePath = inSwapPath ? '/swap' : '';
+          
+          // Replace the current history state with the redirect path
+          // This makes the browser URL show the correct path
+          if (redirectPath !== '/' && redirectPath !== '/404.html') {
+            window.history.replaceState(null, null, basePath + redirectPath);
+          }
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

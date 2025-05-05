@@ -20,8 +20,8 @@ function Router() {
   
   return (
     <Switch>
-      <Route path={`${basePath}/`} component={Home} />
-      <Route path={`${basePath}`} component={Home} />
+      <Route path="/" component={Home} />
+      {/* If we have additional routes, they will be added here */}
       <Route component={NotFound} />
     </Switch>
   );
