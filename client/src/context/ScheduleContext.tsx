@@ -171,8 +171,57 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
 export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(scheduleReducer, initialState);
   
-  const parseSchedule = (scheduleHtml: string) => {
-    dispatch({ type: "PARSE_SCHEDULE", payload: { scheduleHtml } });
+  const parseSchedule = (input: string, isExcelFormat: boolean = false) => {
+    let parsedData;
+    
+    try {
+      if (isExcelFormat) {
+        parsedData = parseExcelData(input);
+      } else {
+        parsedData = parseScheduleHTML(input);
+      }
+      
+      // Process the data and update state
+      const { schedule, metadata } = parsedData;
+      
+      // Preprocess schedule to calculate isWorkingDay
+      Object.keys(schedule).forEach(residentName => {
+        Object.keys(schedule[residentName]).forEach(date => {
+          const assignment = schedule[residentName][date];
+          assignment.isWorkingDay = isWorkingDay(assignment);
+        });
+      });
+      
+      // Infer PGY levels from resident names if possible
+      const inferredPgyLevels = inferPGYLevels(metadata.residents);
+      
+      // Default to demo PGY data for testing
+      const pgyLevels = { ...demoPGYData, ...inferredPgyLevels };
+      
+      // Create resident objects with PGY levels
+      const residents = metadata.residents.reduce((acc, name) => {
+        if (!name || name === "<>" || name === " ") return acc;
+        
+        acc[name] = {
+          name,
+          pgyLevel: (pgyLevels as Record<string, PGYLevel>)[name] || 2 // Default to PGY2 if not available
+        };
+        return acc;
+      }, {} as { [name: string]: { name: string; pgyLevel: PGYLevel } });
+      
+      dispatch({ 
+        type: "PARSE_SCHEDULE", 
+        payload: { 
+          scheduleHtml: input,
+          parsedSchedule: schedule,
+          parsedMetadata: metadata,
+          residents
+        } 
+      });
+    } catch (error) {
+      console.error("Error parsing schedule:", error);
+      throw error;
+    }
   };
   
   const setPgyLevels = (pgyLevels: { [name: string]: PGYLevel }) => {

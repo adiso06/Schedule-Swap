@@ -213,7 +213,7 @@ export function parseScheduleHTML(html: string): {
 }
 
 // Get assignment info based on code
-function getAssignmentInfo(
+export function getAssignmentInfo(
   code: string,
   isWeekend: boolean
 ): Assignment {

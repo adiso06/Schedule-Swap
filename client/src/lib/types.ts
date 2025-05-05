@@ -3,7 +3,9 @@ export type AssignmentType =
   | "Required" 
   | "Elective" 
   | "Status"
-  | "Admin";
+  | "Admin"
+  | "Clinic"
+  | "TBD";
 
 // PGY levels
 export type PGYLevel = 1 | 2 | 3;

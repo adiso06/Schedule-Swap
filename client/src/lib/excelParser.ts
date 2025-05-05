@@ -66,14 +66,15 @@ export function parseExcelData(data: string): {
         const assignmentCode = row[dateIndex].trim();
         if (assignmentCode && assignmentCode !== "OFF") {
           // Use the existing getAssignmentInfo function to classify assignments
-          schedule[residentName][dates[j]] = getAssignmentInfo(assignmentCode);
+          const isWeekendDay = checkIsWeekend(new Date(dates[j]));
+          schedule[residentName][dates[j]] = getAssignmentInfo(assignmentCode, isWeekendDay);
         } else if (assignmentCode === "OFF") {
           // Handle OFF days explicitly
           schedule[residentName][dates[j]] = {
             code: "OFF",
             type: "Status" as AssignmentType,
             swappable: SwappableStatus.No,
-            isWeekend: isWeekend(new Date(dates[j])),
+            isWeekend: checkIsWeekend(new Date(dates[j])),
             isWorkingDay: false
           };
         }
@@ -148,7 +149,7 @@ function parseExcelDateString(dateStr: string): string | null {
 /**
  * Check if a date is a weekend
  */
-function isWeekend(date: Date): boolean {
+function checkIsWeekend(date: Date): boolean {
   const day = date.getDay();
   return day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
 }
