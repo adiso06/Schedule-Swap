@@ -259,9 +259,10 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         const residents = metadata.residents.reduce((acc, name) => {
           if (!name || name === "<>" || name === " ") return acc;
           
+          const pgyLevelValue = pgyLevels[name] ? pgyLevels[name] as PGYLevel : (2 as PGYLevel);
           acc[name] = {
             name,
-            pgyLevel: pgyLevels[name] || (2 as unknown as PGYLevel) // Default to PGY2 if not available
+            pgyLevel: pgyLevelValue // Default to PGY2 if not available
           };
           return acc;
         }, {} as { [name: string]: { name: string; pgyLevel: PGYLevel } });
@@ -387,9 +388,10 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       const residents = metadata.residents.reduce((acc, name) => {
         if (!name || name === "<>" || name === " ") return acc;
         
+        const pgyLevelValue = pgyLevels[name] ? pgyLevels[name] as PGYLevel : (2 as PGYLevel);
         acc[name] = {
           name,
-          pgyLevel: (pgyLevels as Record<string, PGYLevel>)[name] || (2 as unknown as PGYLevel) // Default to PGY2 if not available
+          pgyLevel: pgyLevelValue // Default to PGY2 if not available
         };
         return acc;
       }, {} as { [name: string]: { name: string; pgyLevel: PGYLevel } });
@@ -824,6 +826,71 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "RESET" });
   };
   
+  // Payback Swap Finder implementation
+  const findPaybackSwaps = (residentAName: string, residentBName: string, originalSwapDate: string): PaybackSwap[] => {
+    console.log(`Finding payback swaps for ${residentAName} to pay back ${residentBName} after ${originalSwapDate}`);
+    
+    const residentA = state.residents[residentAName];
+    const residentB = state.residents[residentBName];
+    
+    // Validate that we have both residents
+    if (!residentA || !residentB) {
+      console.error("One or both residents not found");
+      return [];
+    }
+    
+    // Get all dates after the original swap date
+    const futureSwapDates = state.metadata.dates.filter(date => {
+      return new Date(date) > new Date(originalSwapDate);
+    });
+    
+    console.log(`Found ${futureSwapDates.length} potential future dates to check`);
+    
+    const paybackSwaps: PaybackSwap[] = [];
+    
+    // For each potential future date
+    for (const futureDate of futureSwapDates) {
+      const assignmentA = state.schedule[residentAName]?.[futureDate];
+      const assignmentB = state.schedule[residentBName]?.[futureDate];
+      
+      // Skip if either resident doesn't have an assignment for that day
+      if (!assignmentA || !assignmentB) {
+        continue;
+      }
+      
+      // Check payback condition: A must be on Elective and B must be on Required
+      if (assignmentA.type !== "Elective" || assignmentB.type !== "Required") {
+        continue;
+      }
+      
+      // Perform full validation for the swap
+      const scheduleA = state.schedule[residentAName] || {};
+      const scheduleB = state.schedule[residentBName] || {};
+      
+      const validationResult = validateSwap(
+        residentA,
+        residentB,
+        assignmentA,
+        assignmentB,
+        futureDate,
+        scheduleA,
+        scheduleB
+      );
+      
+      // If validation passes, add this as a potential payback swap
+      if (validationResult.isValid) {
+        paybackSwaps.push({
+          date: futureDate,
+          residentAElectiveAssignment: assignmentA,
+          residentBRequiredAssignment: assignmentB
+        });
+      }
+    }
+    
+    console.log(`Found ${paybackSwaps.length} valid payback swap options`);
+    return paybackSwaps;
+  };
+  
   // Local storage functions
   const saveCurrentSchedule = (name: string): SavedSchedule => {
     if (!state.metadata.isLoaded) {
@@ -893,6 +960,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     setCurrentResident,
     setCurrentDate,
     findValidSwaps,
+    findPaybackSwaps,
     reset,
     saveCurrentSchedule,
     loadSchedule,
