@@ -762,14 +762,22 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       return true;
     }
     
-    // Add Required <-> Required as a valid case (fix for the issue)
+    // Required <-> Required is NOT allowed per business rules
     if (typeA === "Required" && typeB === "Required") {
-      console.log("Valid: Required <-> Required");
-      return true;
+      console.log("Invalid: Required <-> Required not allowed");
+      return false;
     }
     
-    // Only Required <-> Status is not valid
-    console.log(`Invalid combination: ${typeA} <-> ${typeB}`);
+    // Required <-> Status is not valid & Clinic type needs special handling
+    if ((typeA === "Required" && typeB === "Status") || 
+        (typeA === "Status" && typeB === "Required") || 
+        typeA === "Clinic" || typeB === "Clinic") {
+      console.log(`Invalid combination: ${typeA} <-> ${typeB}`);
+      return false;
+    }
+    
+    // If we've reached here, it's likely an unhandled combination
+    console.log(`Unhandled combination: ${typeA} <-> ${typeB}, defaulting to invalid`);
     return false;
   }
   
