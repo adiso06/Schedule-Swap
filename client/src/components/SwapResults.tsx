@@ -1,6 +1,7 @@
 import React from "react";
 import { useSchedule } from "@/hooks/useSchedule";
 import { getAssignmentTypeBadgeColor, getAssignmentBgColor, formatDateForDisplay } from "@/lib/utils";
+import { getUserFriendlyLabel } from "@/lib/assignmentLabels";
 
 export default function SwapResults() {
   const { state } = useSchedule();
@@ -49,8 +50,9 @@ export default function SwapResults() {
                     <div>
                       <div className="text-sm text-gray-500 mb-1">Current Assignment:</div>
                       <div className={`text-sm font-medium p-2 rounded border ${getAssignmentBgColor(swap.assignmentB.type)}`}>
-                        {swap.assignmentB.code}
-                        <span className={`ml-1 text-xs px-1.5 rounded-full ${getAssignmentTypeBadgeColor(swap.assignmentB.type)}`}>
+                        <div>{getUserFriendlyLabel(swap.assignmentB.code)}</div>
+                        <div className="mt-1 text-xs text-gray-500">{swap.assignmentB.code}</div>
+                        <span className={`mt-1 inline-block text-xs px-1.5 rounded-full ${getAssignmentTypeBadgeColor(swap.assignmentB.type)}`}>
                           {swap.assignmentB.type}
                         </span>
                       </div>
@@ -65,8 +67,9 @@ export default function SwapResults() {
                     <div>
                       <div className="text-sm text-gray-500 mb-1">Your Assignment:</div>
                       <div className={`text-sm font-medium p-2 rounded border ${getAssignmentBgColor(swap.assignmentA.type)}`}>
-                        {swap.assignmentA.code}
-                        <span className={`ml-1 text-xs px-1.5 rounded-full ${getAssignmentTypeBadgeColor(swap.assignmentA.type)}`}>
+                        <div>{getUserFriendlyLabel(swap.assignmentA.code)}</div>
+                        <div className="mt-1 text-xs text-gray-500">{swap.assignmentA.code}</div>
+                        <span className={`mt-1 inline-block text-xs px-1.5 rounded-full ${getAssignmentTypeBadgeColor(swap.assignmentA.type)}`}>
                           {swap.assignmentA.type}
                         </span>
                       </div>

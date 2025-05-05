@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useSchedule } from "@/hooks/useSchedule";
 import { formatDateToYYYYMMDD, getWeekDisplay } from "@/lib/utils";
 import { addDays, startOfWeek, parseISO, format } from "date-fns";
+import { getUserFriendlyLabel } from "@/lib/assignmentLabels";
 
 export default function ScheduleVisualization() {
   const { state } = useSchedule();
@@ -123,8 +124,11 @@ export default function ScheduleVisualization() {
                         className={`py-2 px-3 border-b border-r border-gray-200 text-sm text-center ${
                           day.isWeekend ? "bg-yellow-50" : ""
                         }`}
+                        title={assignment?.code ? getUserFriendlyLabel(assignment.code) : ""}
                       >
-                        {assignment?.code || ""}
+                        <div className="truncate max-w-[120px] mx-auto">
+                          {assignment?.code || ""}
+                        </div>
                       </td>
                     );
                   })}
