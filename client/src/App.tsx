@@ -7,6 +7,7 @@ import { ScheduleProvider } from "./context/ScheduleContext";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import PaybackSwapPage from "@/pages/PaybackSwapPage";
+import Footer from "@/components/Footer";
 
 function Router() {
   return (
@@ -23,8 +24,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ScheduleProvider>
-          <Toaster />
-          <Router />
+          <div className="flex flex-col min-h-screen">
+            <Toaster />
+            <Router />
+            <Footer />
+          </div>
         </ScheduleProvider>
       </TooltipProvider>
     </QueryClientProvider>

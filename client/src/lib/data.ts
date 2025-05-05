@@ -172,6 +172,12 @@ export const assignmentClassification: AssignmentClassification = {
     notes:
       "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
   },
+  "NSLIJ:DM:ID:El-ID-LIJ": {
+    type: "Elective",
+    swappable: "Yes",
+    notes:
+      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
+  },
   "NSLIJ:DM:IM:El-Procedure-LIJ": {
     type: "Elective",
     swappable: "Yes",

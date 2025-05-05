@@ -11,7 +11,7 @@ export default function AppHeader() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <CalendarDays className="text-primary-600 h-6 w-6 mr-2" />
-            <h1 className="text-xl font-semibold text-gray-900">Residency Schedule Swap Engine</h1>
+            <h1 className="text-xl font-semibold text-gray-900">SWAP <span className="text-sm font-normal text-gray-500">(Switch With A Person)</span></h1>
           </div>
           <div className="flex space-x-6">
             <nav className="flex space-x-6 mr-6">

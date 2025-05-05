@@ -22,7 +22,14 @@ export default function ScheduleVisualization() {
       ...validSwaps.map(swap => swap.residentB)
     ]);
     
-    return Array.from(residentSet);
+    // Return an array with current resident first, then others alphabetically
+    return Array.from(residentSet).sort((a, b) => {
+      // Always put current resident at the top
+      if (a === currentResident) return -1;
+      if (b === currentResident) return 1;
+      // Otherwise sort alphabetically
+      return a.localeCompare(b);
+    });
   }, [residents, validSwaps, currentResident, currentDate]);
   
   // Show a week at a time starting from the first date
