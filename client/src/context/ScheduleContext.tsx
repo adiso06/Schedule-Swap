@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, ReactNode } from "react";
+import React, { createContext, useReducer, ReactNode, useContext } from "react";
 import { 
   ScheduleState, 
   PotentialSwap, 
@@ -14,6 +14,20 @@ import {
   isWorkingDay
 } from "@/lib/utils";
 import { demoPGYData } from "@/lib/data";
+
+// Create context with initial type definition
+type ScheduleContextType = {
+  state: ScheduleState;
+  parseSchedule: (scheduleHtml: string) => void;
+  setPgyLevels: (pgyLevels: { [name: string]: PGYLevel }) => void;
+  setCurrentResident: (residentName: string | null) => void;
+  setCurrentDate: (date: string | null) => void;
+  findValidSwaps: (residentName: string, date: string) => void;
+  reset: () => void;
+};
+
+// Create the context with a default undefined value that will be overridden
+const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
 
 // Initial state
 const initialState: ScheduleState = {
@@ -131,18 +145,7 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
   }
 }
 
-// Context
-type ScheduleContextType = {
-  state: ScheduleState;
-  parseSchedule: (scheduleHtml: string) => void;
-  setPgyLevels: (pgyLevels: { [name: string]: PGYLevel }) => void;
-  setCurrentResident: (residentName: string | null) => void;
-  setCurrentDate: (date: string | null) => void;
-  findValidSwaps: (residentName: string, date: string) => void;
-  reset: () => void;
-};
-
-const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
+// Context is already defined above, no need to redefine it
 
 // Provider component
 export function ScheduleProvider({ children }: { children: ReactNode }) {
