@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDateForDisplay, getAssignmentTypeBadgeColor } from "@/lib/utils";
 
 export default function SwapFinderForm() {
+  const [isSearching, setIsSearching] = useState(false);
   const { 
     state, 
     setCurrentResident, 
@@ -49,7 +50,29 @@ export default function SwapFinderForm() {
       return;
     }
     
-    findValidSwaps(currentResident, currentDate);
+    setIsSearching(true);
+    
+    try {
+      findValidSwaps(currentResident, currentDate);
+      toast({
+        title: "Search Complete",
+        description: "Found possible swap options for the selected date",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Search Error",
+        description: error instanceof Error ? error.message : "Failed to find swaps",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+  
+  // Debug function to check what dates are available
+  const logDates = () => {
+    console.log("Available dates:", metadata.dates);
+    console.log("Current date:", currentDate);
   };
   
   return (
@@ -66,7 +89,7 @@ export default function SwapFinderForm() {
             onValueChange={(value) => setCurrentResident(value)}
             disabled={!metadata.isLoaded}
           >
-            <SelectTrigger id="resident-select" className="w-full">
+            <SelectTrigger id="resident-select" className="w-full border border-gray-300">
               <SelectValue placeholder="Select a resident..." />
             </SelectTrigger>
             <SelectContent>
@@ -87,21 +110,32 @@ export default function SwapFinderForm() {
         <div className="relative">
           <Select
             value={currentDate || ""}
-            onValueChange={(value) => setCurrentDate(value)}
-            disabled={!metadata.isLoaded}
+            onValueChange={(value) => {
+              console.log("Setting date to:", value);
+              setCurrentDate(value);
+            }}
+            disabled={!metadata.isLoaded || metadata.dates.length === 0}
           >
-            <SelectTrigger id="swap-date" className="w-full">
+            <SelectTrigger id="swap-date" className="w-full border border-gray-300">
               <SelectValue placeholder="Select a date..." />
             </SelectTrigger>
             <SelectContent>
-              {metadata.dates.map((date) => (
-                <SelectItem key={date} value={date}>
-                  {formatDateForDisplay(date)}
-                </SelectItem>
-              ))}
+              {metadata.dates.length > 0 ? (
+                metadata.dates.map((date) => (
+                  <SelectItem key={date} value={date}>
+                    {formatDateForDisplay(date)}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no-dates" disabled>No dates available</SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
+        
+        {metadata.isLoaded && metadata.dates.length === 0 && (
+          <p className="text-sm text-red-500">No dates available. Please import a schedule first.</p>
+        )}
       </div>
       
       {currentAssignment && (
@@ -125,12 +159,23 @@ export default function SwapFinderForm() {
       
       <Button
         id="find-swaps-btn"
-        className="w-full bg-primary-600 hover:bg-primary-700"
+        variant="default"
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
         onClick={handleFindSwaps}
-        disabled={!metadata.isLoaded || !currentResident || !currentDate}
+        disabled={!metadata.isLoaded || !currentResident || !currentDate || isSearching}
       >
-        Find Valid Swaps
+        {isSearching ? "Searching..." : "Find Valid Swaps"}
       </Button>
+      
+      {/* Debug info for development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="text-xs text-gray-400 mt-2">
+          <p>Schedule loaded: {metadata.isLoaded ? "Yes" : "No"}</p>
+          <p>Dates available: {metadata.dates.length}</p>
+          <p>Residents: {Object.keys(residents).length}</p>
+          <button onClick={logDates} className="text-xs text-blue-400 underline">Debug Dates</button>
+        </div>
+      )}
     </div>
   );
 }
