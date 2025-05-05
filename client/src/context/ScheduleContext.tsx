@@ -762,9 +762,13 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       return true;
     }
     
-    // All other combinations are not valid, including:
-    // - Required <-> Required
-    // - Required <-> Status
+    // Add Required <-> Required as a valid case (fix for the issue)
+    if (typeA === "Required" && typeB === "Required") {
+      console.log("Valid: Required <-> Required");
+      return true;
+    }
+    
+    // Only Required <-> Status is not valid
     console.log(`Invalid combination: ${typeA} <-> ${typeB}`);
     return false;
   }
