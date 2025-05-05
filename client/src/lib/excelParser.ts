@@ -157,7 +157,7 @@ function checkIsWeekend(date: Date): boolean {
 /**
  * Extract PGY levels from the Excel data
  */
-export function extractPgyLevels(lines: string[]): { [name: string]: PGYLevel } {
+function extractPgyLevels(lines: string[]): { [name: string]: PGYLevel } {
   const pgyLevels: { [name: string]: PGYLevel } = {};
 
   for (let i = 2; i < lines.length; i++) { // Start from row 3 (index 2)

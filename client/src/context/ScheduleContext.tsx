@@ -9,7 +9,7 @@ import {
   AssignmentType
 } from "@/lib/types";
 import { parseScheduleHTML, inferPGYLevels } from "@/lib/scheduleParser";
-import { parseExcelData, extractPgyLevels } from "@/lib/excelParser";
+import { parseExcelData } from "@/lib/excelParser";
 import { 
   checkConsecutiveWorkingDays, 
   getConsecutiveRanges, 
@@ -228,15 +228,10 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   
   const parseSchedule = (input: string, isExcelFormat: boolean = false) => {
     let parsedData;
-    let extractedPgyLevels: { [name: string]: PGYLevel } = {};
     
     try {
       if (isExcelFormat) {
-        // For Excel data, also extract PGY levels directly from the second column
         parsedData = parseExcelData(input);
-        // Get PGY levels directly from Excel data if it's in the right format
-        extractedPgyLevels = extractPgyLevels(input.trim().split(/\r?\n/));
-        console.log("Extracted PGY levels from Excel in parseSchedule:", extractedPgyLevels);
       } else {
         parsedData = parseScheduleHTML(input);
       }
@@ -256,19 +251,66 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         });
       });
       
-      // Only infer PGY levels if we don't have Excel-extracted levels
-      let pgyLevels = {};
+      // Get basic PGY levels - either from Excel or infer from names
+      const pgyLevels: { [name: string]: PGYLevel } = {};
       
-      if (isExcelFormat && Object.keys(extractedPgyLevels).length > 0) {
-        // If we have extracted PGY levels from Excel, use those
-        pgyLevels = extractedPgyLevels;
-        console.log("Using Excel-extracted PGY levels:", pgyLevels);
-      } else {
-        // Otherwise infer from names and fall back to demo data
-        const inferredPgyLevels = inferPGYLevels(metadata.residents);
-        pgyLevels = { ...demoPGYData, ...inferredPgyLevels };
-        console.log("Using inferred PGY levels:", pgyLevels);
+      // Always infer PGY levels first
+      const inferredPgyLevels = inferPGYLevels(metadata.residents);
+      
+      // Copy the inferred levels into our variable
+      Object.keys(inferredPgyLevels).forEach(name => {
+        pgyLevels[name] = inferredPgyLevels[name];
+      });
+      
+      // If Excel data is provided, try to extract PGY levels from it
+      if (isExcelFormat) {
+        try {
+          const excelLines = input.trim().split(/\r?\n/);
+          for (let i = 2; i < excelLines.length; i++) {
+            const row = excelLines[i].split(/\t/);
+            if (row.length < 2) continue;
+            
+            const residentName = row[0].trim();
+            const pgyLevelStr = row[1].trim();
+            
+            if (residentName && pgyLevelStr) {
+              let level: PGYLevel | null = null;
+              
+              // Extract PGY level (e.g., "PGY-1" => 1)
+              const pgyMatch = pgyLevelStr.match(/PGY-?(\d+)/i);
+              
+              if (pgyMatch) {
+                level = parseInt(pgyMatch[1], 10) as PGYLevel;
+              } else if (pgyLevelStr === "1" || pgyLevelStr === "2" || pgyLevelStr === "3") {
+                level = parseInt(pgyLevelStr, 10) as PGYLevel;
+              } else if (pgyLevelStr.toLowerCase().includes("pgy") && pgyLevelStr.includes("1")) {
+                level = 1;
+              } else if (pgyLevelStr.toLowerCase().includes("pgy") && pgyLevelStr.includes("2")) {
+                level = 2;
+              } else if (pgyLevelStr.toLowerCase().includes("pgy") && pgyLevelStr.includes("3")) {
+                level = 3;
+              }
+              
+              if (level) {
+                pgyLevels[residentName] = level;
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Error extracting PGY levels from Excel data:", e);
+        }
       }
+      
+      // Add any demo data if available
+      if (Object.keys(demoPGYData).length > 0) {
+        for (const name in demoPGYData) {
+          if (!pgyLevels[name]) {
+            pgyLevels[name] = demoPGYData[name];
+          }
+        }
+      }
+      
+      console.log("Final PGY levels:", pgyLevels);
       
       // Create resident objects with PGY levels
       const residents = metadata.residents.reduce((acc, name) => {
