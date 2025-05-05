@@ -1,12 +1,2 @@
-import { useContext } from "react";
-import ScheduleContext from "../context/ScheduleContext";
-
-export function useSchedule() {
-  const context = useContext(ScheduleContext);
-  
-  if (!context) {
-    throw new Error("useSchedule must be used within a ScheduleProvider");
-  }
-  
-  return context;
-}
+// The useSchedule hook is now directly exported from the ScheduleContext.tsx file
+export { useSchedule } from "../context/ScheduleContext";

@@ -9,16 +9,20 @@ export type AssignmentType =
 export type PGYLevel = 1 | 2 | 3;
 
 // Assignment swappability status
+// Define as string enum to make assignment easier
 export enum SwappableStatus {
   Yes = "Yes",
   No = "No",
   Conditional = "Conditional"
 }
 
+// Type aliases for string literals to make them compatible with the enum
+export type SwappableStatusString = "Yes" | "No" | "Conditional";
+
 // Assignment rule
 export interface AssignmentRule {
   type: AssignmentType;
-  swappable: SwappableStatus;
+  swappable: SwappableStatusString; // Allow string literals for easier data entry
   pgyRules?: string;
   notes?: string;
 }

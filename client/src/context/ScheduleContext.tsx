@@ -4,7 +4,8 @@ import {
   PotentialSwap, 
   ValidationResult,
   Assignment,
-  PGYLevel
+  PGYLevel,
+  SwappableStatus
 } from "@/lib/types";
 import { parseScheduleHTML, inferPGYLevels } from "@/lib/scheduleParser";
 import { 
@@ -15,7 +16,7 @@ import {
 } from "@/lib/utils";
 import { demoPGYData } from "@/lib/data";
 
-// Create context with initial type definition
+// Define the context type
 type ScheduleContextType = {
   state: ScheduleState;
   parseSchedule: (scheduleHtml: string) => void;
@@ -26,7 +27,7 @@ type ScheduleContextType = {
   reset: () => void;
 };
 
-// Create the context with a default undefined value that will be overridden
+// Create the context with a default value that will be overridden
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
 
 // Initial state
@@ -78,6 +79,8 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
         
         // Create resident objects with PGY levels
         const residents = metadata.residents.reduce((acc, name) => {
+          if (!name || name === "<>" || name === " ") return acc;
+          
           acc[name] = {
             name,
             pgyLevel: pgyLevels[name] || 2 // Default to PGY2 if not available
@@ -145,8 +148,6 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
   }
 }
 
-// Context is already defined above, no need to redefine it
-
 // Provider component
 export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(scheduleReducer, initialState);
@@ -164,6 +165,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   };
   
   const setCurrentDate = (date: string | null) => {
+    console.log("Setting date to:", date);
     dispatch({ type: "SET_CURRENT_DATE", payload: { date } });
   };
   
@@ -171,7 +173,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     console.log(`Finding valid swaps for ${residentName} on ${date}`);
     
     const residentA = state.residents[residentName];
-    const assignmentA = state.schedule[residentName][date];
+    const assignmentA = state.schedule[residentName]?.[date];
 
     // Debug output for resident A's assignment
     console.log(`Resident A: ${residentName}, PGY: ${residentA?.pgyLevel || 'unknown'}`);
@@ -191,7 +193,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     }
     
     // Validate if the assignment is swappable
-    if (assignmentA.swappable === "No") {
+    if (assignmentA.swappable === SwappableStatus.No) {
       console.log(`Assignment ${assignmentA.code} is not swappable`);
       dispatch({
         type: "SET_VALID_SWAPS",
@@ -211,7 +213,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       if (residentBName === residentName) return;
       
       const residentB = state.residents[residentBName];
-      const assignmentB = state.schedule[residentBName][date];
+      const assignmentB = state.schedule[residentBName]?.[date];
       
       // Skip if no assignment for that day
       if (!assignmentB) return;
@@ -275,7 +277,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       type: "SET_VALID_SWAPS",
       payload: {
         validSwaps,
-        invalidReason: null
+        invalidReason: validSwaps.length === 0 ? "No valid swaps found for the selected resident and date." : null
       }
     });
   };
@@ -300,9 +302,10 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     };
     
     // C2: Assignment Swappability
-    validationResult.isAssignmentSwappable = 
-      assignmentA.swappable !== "No" && 
-      assignmentB.swappable !== "No";
+    validationResult.isAssignmentSwappable = (
+      assignmentA.swappable !== SwappableStatus.No && 
+      assignmentB.swappable !== SwappableStatus.No
+    );
     
     if (!validationResult.isAssignmentSwappable) {
       validationResult.reason = "One or both assignments are not swappable";
@@ -504,4 +507,11 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export default ScheduleContext;
+// Hook for using the schedule context
+export function useSchedule() {
+  const context = useContext(ScheduleContext);
+  if (context === undefined) {
+    throw new Error("useSchedule must be used within a ScheduleProvider");
+  }
+  return context;
+}

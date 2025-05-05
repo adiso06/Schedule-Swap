@@ -218,25 +218,37 @@ function getAssignmentInfo(
   isWeekend: boolean
 ): Assignment {
   // Find matching classification
-  let matchingRule = Object.entries(assignmentClassification).find(
+  const matchingEntry = Object.entries(assignmentClassification).find(
     ([pattern, _]) => code === pattern || code.startsWith(pattern)
   );
   
   // Default if no match
-  if (!matchingRule) {
-    matchingRule = ["Unknown", {
-      type: "Required",
-      swappable: "No",
-      notes: "Unclassified assignment"
-    }];
+  if (!matchingEntry) {
+    return {
+      code,
+      type: "Required" as AssignmentType,
+      swappable: SwappableStatus.No,
+      isWeekend,
+      isWorkingDay: code !== "OFF" && !code.includes("Vacation") && !code.includes("LOA")
+    };
   }
   
-  const [pattern, rule] = matchingRule;
+  const [_, rule] = matchingEntry;
+  
+  // Convert string to enum
+  let swappableStatus: SwappableStatus;
+  if (rule.swappable === "Yes") {
+    swappableStatus = SwappableStatus.Yes;
+  } else if (rule.swappable === "No") {
+    swappableStatus = SwappableStatus.No;
+  } else {
+    swappableStatus = SwappableStatus.Conditional;
+  }
   
   return {
     code,
     type: rule.type,
-    swappable: rule.swappable as SwappableStatus,
+    swappable: swappableStatus,
     isWeekend,
     isWorkingDay: code !== "OFF" && !code.includes("Vacation") && !code.includes("LOA") // This will be calculated later with isWorkingDay()
   };
