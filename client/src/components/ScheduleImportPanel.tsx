@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useContext } from "react";
 import { ScheduleContext } from "@/context/ScheduleContext";
-import { demoScheduleHTML, defaultScheduleData } from "@/lib/data";
+import { demoScheduleHTML, defaultScheduleData, defaultScheduleJSON } from "@/lib/data";
 import PGYLevelEditor from "./PGYLevelEditor";
 
 export default function ScheduleImportPanel() {
@@ -191,7 +191,33 @@ export default function ScheduleImportPanel() {
   const loadDefaultData = () => {
     console.log("Loading default schedule data...");
     try {
-      parseSchedule(defaultScheduleData, true);
+      // Convert JSON to Excel format
+      const jsonToExcel = (jsonData: any[]) => {
+        // Get all date keys from the first resident
+        const firstResident = jsonData[0];
+        const dateKeys = Object.keys(firstResident).filter(key => 
+          key !== 'Name' && key !== 'PGY Level'
+        );
+        
+        // Create header row
+        let excelContent = `Name\tPGY Level\t${dateKeys.join('\t')}\n`;
+        
+        // Add each resident's data
+        jsonData.forEach(resident => {
+          let row = `${resident.Name}\t${resident["PGY Level"]}`;
+          dateKeys.forEach(date => {
+            row += `\t${resident[date] || ''}`;
+          });
+          excelContent += row + '\n';
+        });
+        
+        return excelContent;
+      };
+      
+      // Use the JSON data
+      const excelData = jsonToExcel(defaultScheduleJSON);
+      parseSchedule(excelData, true);
+      
       toast({
         title: "Default Schedule Loaded",
         description: "The default residency schedule has been loaded automatically.",

@@ -201,16 +201,157 @@ export const assignmentClassification: AssignmentClassification = {
 };
 
 /**
- * Default schedule data in tab-delimited format for loading as the baseline schedule.
+ * Default schedule data in JSON format for loading as the baseline schedule.
  * This is the schedule data that will be shown if users don't upload their own.
  */
-export const defaultScheduleData = `-\t-\tTue\tWed\tThu\tFri\tSat\tSun\tMon\tTue\tWed\tThu\tFri\tSat\tSun\tMon\tTue\tWed\tThu\tFri\tSat\tSun\tMon\tTue\tWed\tThu\tFri\tSat\tSun\tMon\tTue\tWed\tThu\tFri\tSat\tSun\tMon\tTue\tWed\tThu\tFri\tSat\tSun\tMon\tTue\tWed\tThu\tFri\tSat\tSun\tMon\tTue\tWed\tThu\tFri\tSat\tSun\tMon\tTue\tWed\tThu\tFri\tSat\tSun\tMon\tTue
-Name\tPGY Level\tApr-22\tApr-23\tApr-24\tApr-25\tApr-26\tApr-27\tApr-28\tApr-29\tApr-30\t05-Jan\t05-Feb\t05-Mar\t05-Apr\t05-May\t05-Jun\t05-Jul\t05-Aug\t05-Sep\t05-Oct\t05-Nov\t05-Dec\tMay-13\tMay-14\tMay-15\tMay-16\tMay-17\tMay-18\tMay-19\tMay-20\tMay-21\tMay-22\tMay-23\tMay-24\tMay-25\tMay-26\tMay-27\tMay-28\tMay-29\tMay-30\tMay-31\t06-Jan\t06-Feb\t06-Mar\t06-Apr\t06-May\t06-Jun\t06-Jul\t06-Aug\t06-Sep\t06-Oct\t06-Nov\t06-Dec\tJun-13\tJun-14\tJun-15\tJun-16\tJun-17\tJun-18\tJun-19\tJun-20\tJun-21\tJun-22\tJun-23\tJun-24
-Aboseria, Ahmed\tPGY-1\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-L\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-S\tOFF\tNSLIJ:DM:IM:Team-NS-2-L\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-L\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-L\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-S\tOFF\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Team-LIJ-1-L\tNSLIJ:DM:IM:Team-LIJ-1-S\tNSLIJ:DM:IM:Team-LIJ-1-L\tNSLIJ:DM:IM:Team-LIJ-1-S\tNSLIJ:DM:IM:Team-LIJ-1-L\tNSLIJ:DM:IM:Team-LIJ-1-S\tOFF\tNSLIJ:DM:IM:Team-LIJ-1-L\tNSLIJ:DM:IM:Team-LIJ-1-S\tNSLIJ:DM:IM:Team-LIJ-1-L\tNSLIJ:DM:IM:Team-LIJ-1-S\tNSLIJ:DM:IM:Team-LIJ-1-L\tOFF\tNSLIJ:DM:IM:Team-LIJ-1-S\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation
-Achuonjei, Joy\tPGY-1\tNSLIJ:DM:PALL:El-Pall-LIJ\tNSLIJ:DM:PALL:El-Pall-LIJ\tNSLIJ:DM:PALL:El-Pall-LIJ\tNSLIJ:DM:PALL:El-Pall-LIJ\tNSLIJ:DM:PALL:El-Pall-LIJ\tNSLIJ:DM:PALL:El-Pall-LIJ\tNSLIJ:DM:GI:El-Hep-LIJ\tNSLIJ:DM:GI:El-Hep-LIJ\tNSLIJ:DM:GI:El-Hep-LIJ\tNSLIJ:DM:GI:El-Hep-LIJ\tNSLIJ:DM:GI:El-Hep-LIJ\tNSLIJ:DM:GI:El-Hep-LIJ\tNSLIJ:DM:GI:El-Hep-LIJ\tNSLIJ:DM:IM:Team-LIJ-4-L\tNSLIJ:DM:IM:Team-LIJ-4-S\tNSLIJ:DM:IM:Team-LIJ-4-L\tNSLIJ:DM:IM:Team-LIJ-4-S\tNSLIJ:DM:IM:Team-LIJ-4-S\tOFF\tNSLIJ:DM:IM:Team-LIJ-4-L\tNSLIJ:DM:IM:Team-LIJ-4-S\tNSLIJ:DM:IM:Team-LIJ-4-L\tNSLIJ:DM:IM:Team-LIJ-4-S\tNSLIJ:DM:IM:Team-LIJ-4-L\tNSLIJ:DM:IM:Team-LIJ-4-S\tOFF\tNSLIJ:DM:IM:Team-LIJ-4-S\tNSLIJ:DM:IM:NF-LIJ\tNSLIJ:DM:IM:NF-LIJ\tNSLIJ:DM:IM:NF-LIJ\tNSLIJ:DM:IM:NF-LIJ\tNSLIJ:DM:IM:NF-LIJ\tNSLIJ:DM:IM:NF-LIJ\tNSLIJ:DM:IM:NF-LIJ\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tELECTIVE_NSUH\tELECTIVE_NSUH\tELECTIVE_NSUH\tELECTIVE_NSUH\tELECTIVE_NSUH\tELECTIVE_NSUH\tELECTIVE_NSUH
-Annesi, Thomas\tPGY-1\tNSLIJ:DM:IM:Team-NS-3-S\tNSLIJ:DM:IM:Team-NS-3-S\tNSLIJ:DM:IM:Team-NS-3-L\tNSLIJ:DM:IM:Team-NS-3-S\tNSLIJ:DM:IM:Team-NS-3-S\tOFF\tNSLIJ:DM:IM:Team-NS-3-L\tNSLIJ:DM:IM:Team-NS-3-S\tNSLIJ:DM:IM:Team-NS-3-L\tNSLIJ:DM:IM:Team-NS-3-S\tNSLIJ:DM:IM:Team-NS-3-L\tNSLIJ:DM:IM:Team-NS-3-S\tOFF\tOFF\tNSLIJ:DM:IM:Team-NS-3-L\tNSLIJ:DM:IM:Team-NS-3-S\tNSLIJ:DM:IM:Team-NS-3-L\tNSLIJ:DM:IM:Team-NS-3-S\tNSLIJ:DM:IM:Team-NS-3-L\tNSLIJ:DM:IM:Team-NS-3-S\tDPEDS:AI:El-AI\tNSLIJ:DM:IM:Team-NS-8-L\tDPEDS:AI:El-AI\tDPEDS:AI:El-AI\tDPEDS:AI:El-AI\tDPEDS:AI:El-AI\tDPEDS:AI:El-AI\tDPEDS:AI:El-AI\tDPEDS:AI:El-AI\tDPEDS:AI:El-AI\tDPEDS:AI:El-AI\tDPEDS:AI:El-AI\tDPEDS:AI:El-AI\tDPEDS:AI:El-AI\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:NF-LIJ\tNSLIJ:DM:IM:NF-LIJ\tNSLIJ:DM:IM:NF-LIJ\tNSLIJ:DM:IM:NF-LIJ\tNSLIJ:DM:IM:NF-LIJ\tNSLIJ:DM:IM:NF-LIJ\tNSLIJ:DM:IM:NF-LIJ\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:PULM:MICU-NS-G1-L\tNSLIJ:DM:PULM:MICU-NS-G1-Sh\tNSLIJ:DM:PULM:MICU-NS-G1-L\tNSLIJ:DM:PULM:MICU-NS-G1-Sh\tNSLIJ:DM:PULM:MICU-NS-G1-L\tOFF
-Babadzhanov, Marianna\tPGY-1\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tNSLIJ:DM:IM:NF-NS\tOFF\tNSLIJ:DM:PULM:MICU-LIJ-N\tOFF\tNSLIJ:DM:PULM:MICU-LIJ-N\tNSLIJ:DM:PULM:MICU-LIJ-N\tNSLIJ:DM:PULM:MICU-LIJ-N\tNSLIJ:DM:PULM:MICU-LIJ-N\tMICU-LIJ-Shw-PM\tOFF\tMICU-LIJ-Shw-PM\tOFF\tOFF\tMICU-LIJ-Shw-Y\tMICU-LIJ-Shw-G\tNSLIJ:DM:IM:Team-LIJ-8-L\tNSLIJ:DM:IM:Team-LIJ-8-S\tNSLIJ:DM:IM:Team-LIJ-8-L\tNSLIJ:DM:IM:Team-LIJ-8-S\tNSLIJ:DM:IM:Team-LIJ-8-L\tOFF\tNSLIJ:DM:IM:Team-LIJ-8-L\tNSLIJ:DM:IM:Team-LIJ-8-S\tNSLIJ:DM:IM:Team-LIJ-8-L\tNSLIJ:DM:IM:Team-LIJ-8-S\tNSLIJ:DM:IM:Team-LIJ-8-L\tNSLIJ:DM:IM:Team-LIJ-8-S\tOFF\tNSLIJ:DM:IM:Team-LIJ-8-S\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ\tNSLIJ:DM:ID:El-ID-LIJ
-Bevagna, Holly\tPGY-1\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tOFF\tNSLIJ:DM:PULM:MICU-LIJ-N\tOFF\tNSLIJ:DM:PULM:MICU-LIJ-N\tNSLIJ:DM:PULM:MICU-LIJ-N\tNSLIJ:DM:PULM:MICU-LIJ-N\tNSLIJ:DM:PULM:MICU-LIJ-N\tMICU-LIJ-Shw-PM\tOFF\tMICU-LIJ-Shw-PM\tOFF\tOFF\tMICU-LIJ-Shw-Y\tMICU-LIJ-Shw-G\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Team-LIJ-6-L\tNSLIJ:DM:IM:Team-LIJ-6-S\tNSLIJ:DM:IM:Team-LIJ-6-L\tNSLIJ:DM:IM:Team-LIJ-6-S\tNSLIJ:DM:IM:Team-LIJ-6-L\tOFF\tNSLIJ:DM:IM:Team-LIJ-6-L\tNSLIJ:DM:IM:Team-LIJ-6-S\tNSLIJ:DM:IM:Team-LIJ-6-L\tNSLIJ:DM:IM:Team-LIJ-6-S\tNSLIJ:DM:IM:Team-LIJ-6-L\tNSLIJ:DM:IM:Team-LIJ-6-S\tOFF\tNSLIJ:DM:IM:Team-LIJ-6-S\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-S\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-S\tNSLIJ:DM:IM:Team-NS-5-L\tOFF\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-S\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-S\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-S\tOFF\tNSLIJ:DM:IM:Team-NS-5-S\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-S\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-L`;
+export const defaultScheduleJSON = [
+    {
+        "Name": "Aboseria, Ahmed",
+        "PGY Level": "PGY1",
+        "Apr-22": "NSLIJ:DM:IM:Team-NS-2-S",
+        "Apr-23": "NSLIJ:DM:IM:Team-NS-2-L",
+        "Apr-24": "NSLIJ:DM:IM:Team-NS-2-S",
+        "Apr-25": "NSLIJ:DM:IM:Team-NS-2-S",
+        "Apr-26": "OFF",
+        "Apr-27": "NSLIJ:DM:IM:Team-NS-2-L",
+        "Apr-28": "NSLIJ:DM:IM:Team-NS-2-S",
+        "Apr-29": "NSLIJ:DM:IM:Team-NS-2-L",
+        "Apr-30": "NSLIJ:DM:IM:Team-NS-2-S",
+        "May-1": "NSLIJ:DM:IM:Team-NS-2-L",
+        "May-2": "NSLIJ:DM:IM:Team-NS-2-S",
+        "May-3": "NSLIJ:DM:IM:Team-NS-2-S",
+        "May-4": "OFF",
+        "May-5": "NSLIJ:DM:IM:Clinic-865",
+        "May-6": "NSLIJ:DM:IM:Clinic-865",
+        "May-7": "NSLIJ:DM:IM:Clinic-865",
+        "May-8": "NSLIJ:DM:IM:Clinic-865",
+        "May-9": "NSLIJ:DM:IM:Clinic-865",
+        "May-10": "NSLIJ:DM:IM:Clinic-865",
+        "May-11": "NSLIJ:DM:IM:Clinic-865",
+        "May-12": "NSLIJ:DM:IM:Team-LIJ-1-L",
+        "May-13": "NSLIJ:DM:IM:Team-LIJ-1-S",
+        "May-14": "NSLIJ:DM:IM:Team-LIJ-1-L",
+        "May-15": "NSLIJ:DM:IM:Team-LIJ-1-S"
+    },
+    {
+        "Name": "Achuonjei, Joy",
+        "PGY Level": "PGY1",
+        "Apr-22": "NSLIJ:DM:PALL:El-Pall-LIJ",
+        "Apr-23": "NSLIJ:DM:PALL:El-Pall-LIJ",
+        "Apr-24": "NSLIJ:DM:PALL:El-Pall-LIJ",
+        "Apr-25": "NSLIJ:DM:PALL:El-Pall-LIJ",
+        "Apr-26": "NSLIJ:DM:PALL:El-Pall-LIJ",
+        "Apr-27": "NSLIJ:DM:PALL:El-Pall-LIJ",
+        "Apr-28": "NSLIJ:DM:GI:El-Hep-LIJ",
+        "Apr-29": "NSLIJ:DM:GI:El-Hep-LIJ",
+        "Apr-30": "NSLIJ:DM:GI:El-Hep-LIJ",
+        "May-1": "NSLIJ:DM:GI:El-Hep-LIJ",
+        "May-2": "NSLIJ:DM:GI:El-Hep-LIJ",
+        "May-3": "NSLIJ:DM:GI:El-Hep-LIJ",
+        "May-4": "NSLIJ:DM:GI:El-Hep-LIJ",
+        "May-5": "NSLIJ:DM:IM:Team-LIJ-4-L",
+        "May-6": "NSLIJ:DM:IM:Team-LIJ-4-S",
+        "May-7": "NSLIJ:DM:IM:Team-LIJ-4-L",
+        "May-8": "NSLIJ:DM:IM:Team-LIJ-4-S",
+        "May-9": "NSLIJ:DM:IM:Team-LIJ-4-S",
+        "May-10": "OFF",
+        "May-11": "NSLIJ:DM:IM:Team-LIJ-4-L",
+        "May-12": "NSLIJ:DM:IM:Team-LIJ-4-S",
+        "May-13": "NSLIJ:DM:IM:Team-LIJ-4-L",
+        "May-14": "NSLIJ:DM:IM:Team-LIJ-4-S",
+        "May-15": "NSLIJ:DM:IM:Team-LIJ-4-L"
+    },
+    {
+        "Name": "Annesi, Thomas",
+        "PGY Level": "PGY1",
+        "Apr-22": "NSLIJ:DM:IM:Team-NS-3-S",
+        "Apr-23": "NSLIJ:DM:IM:Team-NS-3-S",
+        "Apr-24": "NSLIJ:DM:IM:Team-NS-3-L",
+        "Apr-25": "NSLIJ:DM:IM:Team-NS-3-S",
+        "Apr-26": "NSLIJ:DM:IM:Team-NS-3-S",
+        "Apr-27": "OFF",
+        "Apr-28": "NSLIJ:DM:IM:Team-NS-3-L",
+        "Apr-29": "NSLIJ:DM:IM:Team-NS-3-S",
+        "Apr-30": "NSLIJ:DM:IM:Team-NS-3-L",
+        "May-1": "NSLIJ:DM:IM:Team-NS-3-S",
+        "May-2": "NSLIJ:DM:IM:Team-NS-3-L",
+        "May-3": "NSLIJ:DM:IM:Team-NS-3-S",
+        "May-4": "OFF",
+        "May-5": "OFF",
+        "May-6": "NSLIJ:DM:IM:Team-NS-3-L",
+        "May-7": "NSLIJ:DM:IM:Team-NS-3-S",
+        "May-8": "NSLIJ:DM:IM:Team-NS-3-L",
+        "May-9": "NSLIJ:DM:IM:Team-NS-3-S",
+        "May-10": "NSLIJ:DM:IM:Team-NS-3-L",
+        "May-11": "NSLIJ:DM:IM:Team-NS-3-S",
+        "May-12": "DPEDS:AI:El-AI",
+        "May-13": "NSLIJ:DM:IM:Team-NS-8-L",
+        "May-14": "DPEDS:AI:El-AI",
+        "May-15": "DPEDS:AI:El-AI"
+    },
+    {
+        "Name": "Babadzhanov, Marianna",
+        "PGY Level": "PGY1",
+        "Apr-22": "NSLIJ:DM:IM:Clinic-865",
+        "Apr-23": "NSLIJ:DM:IM:Clinic-865",
+        "Apr-24": "NSLIJ:DM:IM:Clinic-865",
+        "Apr-25": "NSLIJ:DM:IM:Clinic-865",
+        "Apr-26": "NSLIJ:DM:IM:Clinic-865",
+        "Apr-27": "NSLIJ:DM:IM:Clinic-865",
+        "Apr-28": "NSLIJ:DM:IM:NF-NS",
+        "Apr-29": "NSLIJ:DM:IM:NF-NS",
+        "Apr-30": "NSLIJ:DM:IM:NF-NS",
+        "May-1": "NSLIJ:DM:IM:NF-NS",
+        "May-2": "NSLIJ:DM:IM:NF-NS",
+        "May-3": "NSLIJ:DM:IM:NF-NS",
+        "May-4": "NSLIJ:DM:IM:NF-NS",
+        "May-5": "NSLIJ:DM:IM:NF-NS",
+        "May-6": "NSLIJ:DM:IM:NF-NS",
+        "May-7": "NSLIJ:DM:IM:NF-NS",
+        "May-8": "NSLIJ:DM:IM:NF-NS",
+        "May-9": "NSLIJ:DM:IM:NF-NS",
+        "May-10": "NSLIJ:DM:IM:NF-NS",
+        "May-11": "NSLIJ:DM:IM:NF-NS",
+        "May-12": "OFF",
+        "May-13": "NSLIJ:DM:PULM:MICU-LIJ-N",
+        "May-14": "OFF",
+        "May-15": "NSLIJ:DM:PULM:MICU-LIJ-N"
+    },
+    {
+        "Name": "Bevagna, Holly",
+        "PGY Level": "PGY1",
+        "Apr-22": "NSLIJ:DM:IM:Vacation",
+        "Apr-23": "NSLIJ:DM:IM:Vacation",
+        "Apr-24": "NSLIJ:DM:IM:Vacation",
+        "Apr-25": "NSLIJ:DM:IM:Vacation",
+        "Apr-26": "NSLIJ:DM:IM:Vacation",
+        "Apr-27": "NSLIJ:DM:IM:Vacation",
+        "Apr-28": "OFF",
+        "Apr-29": "NSLIJ:DM:PULM:MICU-LIJ-N",
+        "Apr-30": "OFF",
+        "May-1": "NSLIJ:DM:PULM:MICU-LIJ-N",
+        "May-2": "NSLIJ:DM:PULM:MICU-LIJ-N",
+        "May-3": "NSLIJ:DM:PULM:MICU-LIJ-N",
+        "May-4": "NSLIJ:DM:PULM:MICU-LIJ-N",
+        "May-5": "MICU-LIJ-Shw-PM",
+        "May-6": "OFF",
+        "May-7": "MICU-LIJ-Shw-PM",
+        "May-8": "OFF",
+        "May-9": "OFF",
+        "May-10": "MICU-LIJ-Shw-Y",
+        "May-11": "MICU-LIJ-Shw-G",
+        "May-12": "NSLIJ:DM:IM:Clinic-865",
+        "May-13": "NSLIJ:DM:IM:Clinic-865",
+        "May-14": "NSLIJ:DM:IM:Clinic-865",
+        "May-15": "NSLIJ:DM:IM:Clinic-865"
+    }
+];
+
+/**
+ * This is backward compatibility for the old tab-delimited format
+ */
+export const defaultScheduleData = `Name\tPGY Level\tApr-22\tApr-23\tApr-24\tApr-25\tApr-26\tApr-27\tApr-28\tApr-29\tApr-30\tMay-1\tMay-2\tMay-3\tMay-4\tMay-5\tMay-6\tMay-7\tMay-8\tMay-9\tMay-10\tMay-11\tMay-12\tMay-13\tMay-14\tMay-15
+Aboseria, Ahmed\tPGY1\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-L\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-S\tOFF\tNSLIJ:DM:IM:Team-NS-2-L\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-L\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-L\tNSLIJ:DM:IM:Team-NS-2-S\tNSLIJ:DM:IM:Team-NS-2-S\tOFF\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Team-LIJ-1-L\tNSLIJ:DM:IM:Team-LIJ-1-S\tNSLIJ:DM:IM:Team-LIJ-1-L\tNSLIJ:DM:IM:Team-LIJ-1-S`;
 
 /**
  * Placeholder for demo schedule HTML string.
