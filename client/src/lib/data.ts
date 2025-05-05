@@ -357,7 +357,7 @@ export const defaultScheduleJSON = defaultScheduleDataJSON as [
  */
 export const defaultScheduleData = (() => {
   const headers = ['Name', 'PGY Level'];
-  const dateHeaders = [];
+  const dateHeaders: string[] = [];
   
   // Get all date headers from the first resident
   if (defaultScheduleJSON.length > 0) {
@@ -380,7 +380,9 @@ export const defaultScheduleData = (() => {
     
     // Add each date's data
     dateHeaders.forEach(date => {
-      rowData.push(resident[date] || '');
+      // Type safe access with key indexing
+      const value = date in resident ? (resident as any)[date] : '';
+      rowData.push(value || '');
     });
     
     result += rowData.join('\t') + '\n';

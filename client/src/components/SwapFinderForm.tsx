@@ -46,6 +46,9 @@ export default function SwapFinderForm() {
     }
   }, [metadata.dates, currentDate, setCurrentDate]);
   
+  // State for tracking keyboard navigation in dropdown
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  
   // Initialize the resident input field with the current resident
   useEffect(() => {
     if (currentResident) {
@@ -61,11 +64,27 @@ export default function SwapFinderForm() {
     }
     
     const lowercaseInput = residentInput.toLowerCase();
-    const filtered = Object.keys(residents).filter(name => 
-      name.toLowerCase().includes(lowercaseInput)
-    );
+    const filtered = Object.keys(residents)
+      .filter(name => name.toLowerCase().includes(lowercaseInput))
+      // Sort by closer matches first
+      .sort((a, b) => {
+        // Exact matches first
+        if (a.toLowerCase() === lowercaseInput) return -1;
+        if (b.toLowerCase() === lowercaseInput) return 1;
+        
+        // Then matches that start with the input
+        const aStartsWith = a.toLowerCase().startsWith(lowercaseInput);
+        const bStartsWith = b.toLowerCase().startsWith(lowercaseInput);
+        if (aStartsWith && !bStartsWith) return -1;
+        if (!aStartsWith && bStartsWith) return 1;
+        
+        // Then by alphabetical order
+        return a.localeCompare(b);
+      });
     
     setFilteredResidents(filtered);
+    // Reset selected index when filtered list changes
+    setSelectedIndex(-1);
   }, [residentInput, residents]);
   
   // Handle date input changes
@@ -182,25 +201,58 @@ export default function SwapFinderForm() {
               onChange={(e) => setResidentInput(e.target.value)}
               className="w-full border border-gray-300"
               disabled={!metadata.isLoaded}
+              onKeyDown={(e) => {
+                if (filteredResidents.length === 0) return;
+                
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setSelectedIndex(prev => 
+                    prev < filteredResidents.length - 1 ? prev + 1 : prev
+                  );
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setSelectedIndex(prev => (prev > 0 ? prev - 1 : 0));
+                } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                  e.preventDefault();
+                  const selectedName = filteredResidents[selectedIndex];
+                  setCurrentResident(selectedName);
+                  setResidentInput(selectedName);
+                  setFilteredResidents([]);
+                  setSelectedIndex(-1);
+                } else if (e.key === 'Escape') {
+                  e.preventDefault();
+                  setFilteredResidents([]);
+                  setSelectedIndex(-1);
+                }
+              }}
             />
             
             {filteredResidents.length > 0 && residentInput && (
               <div className="absolute z-10 w-full bg-white mt-1 rounded-md border border-gray-200 shadow-lg max-h-60 overflow-y-auto">
-                {filteredResidents.map((name) => (
-                  <div
-                    key={name}
-                    className={`px-3 py-2 hover:bg-gray-100 cursor-pointer ${
-                      name === currentResident ? 'bg-blue-50 font-medium' : ''
-                    }`}
-                    onClick={() => {
-                      setCurrentResident(name);
-                      setResidentInput(name);
-                      setFilteredResidents([]);
-                    }}
-                  >
-                    {name} {residents[name] && <span className="text-xs text-gray-500 ml-1">(PGY{residents[name].pgyLevel})</span>}
-                  </div>
-                ))}
+                {filteredResidents.map((name, index) => {
+                  const isSelected = index === selectedIndex;
+                  const isCurrentResident = name === currentResident;
+                  
+                  return (
+                    <div
+                      key={name}
+                      className={`px-3 py-2 cursor-pointer ${
+                        isSelected ? 'bg-blue-100' : 
+                        isCurrentResident ? 'bg-blue-50 font-medium' : 
+                        'hover:bg-gray-100'
+                      }`}
+                      onClick={() => {
+                        setCurrentResident(name);
+                        setResidentInput(name);
+                        setFilteredResidents([]);
+                        setSelectedIndex(-1);
+                      }}
+                      onMouseEnter={() => setSelectedIndex(index)}
+                    >
+                      {name} {residents[name] && <span className="text-xs text-gray-500 ml-1">(PGY{residents[name].pgyLevel})</span>}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -246,18 +298,27 @@ export default function SwapFinderForm() {
       {currentAssignment && (
         <div id="assignment-display" className="bg-gray-50 p-3 rounded-md border border-gray-200">
           <h3 className="text-sm font-medium text-gray-700 mb-1">Current Assignment:</h3>
-          <div className="flex items-center">
-            <span id="current-assignment-code" className="text-base font-semibold">
-              {currentAssignment.code}
-            </span>
-            <span
-              id="assignment-type-badge"
-              className={`ml-2 text-xs font-medium px-2 py-0.5 rounded-full ${getAssignmentTypeBadgeColor(
-                currentAssignment.type
-              )}`}
-            >
-              {currentAssignment.type}
-            </span>
+          <div className="flex flex-col">
+            <div className="flex items-center">
+              <span id="current-assignment-code" className="text-base font-semibold">
+                {currentAssignment.code}
+              </span>
+              <span
+                id="assignment-type-badge"
+                className={`ml-2 text-xs font-medium px-2 py-0.5 rounded-full ${getAssignmentTypeBadgeColor(
+                  currentAssignment.type
+                )}`}
+              >
+                {currentAssignment.type}
+              </span>
+            </div>
+            
+            {/* Show user-friendly description if available */}
+            <div className="text-sm text-gray-600 mt-1">
+              {currentAssignment.userFriendlyLabel && (
+                <span>{currentAssignment.userFriendlyLabel}</span>
+              )}
+            </div>
           </div>
         </div>
       )}

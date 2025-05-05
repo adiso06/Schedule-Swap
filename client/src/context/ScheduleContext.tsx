@@ -16,7 +16,7 @@ import {
   createSimulatedSchedule,
   isWorkingDay
 } from "@/lib/utils";
-import { demoPGYData } from "@/lib/data";
+import { demoPGYData, defaultScheduleJSON, defaultScheduleData } from "@/lib/data";
 import { 
   saveSchedule, 
   getAllSchedules, 
@@ -225,6 +225,70 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
 // Provider component
 export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(scheduleReducer, initialState);
+  
+  // Load default schedule data when app starts
+  useEffect(() => {
+    // Skip if schedule is already loaded
+    if (state.metadata.isLoaded) {
+      console.log("Schedule already loaded, skipping auto-load of default data");
+      return;
+    }
+    
+    // Check local storage first
+    const savedSchedules = getAllSchedules();
+    if (savedSchedules.length > 0) {
+      // Load the most recently saved schedule
+      console.log(`Found ${savedSchedules.length} saved schedules, loading most recent...`);
+      const mostRecent = savedSchedules.sort((a, b) => {
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      })[0];
+      
+      try {
+        console.log(`Loading saved schedule: ${mostRecent.name}`);
+        
+        const { scheduleData, metadata, pgyLevels, rawInput } = mostRecent;
+        
+        // Convert saved PGY levels to resident objects
+        const residents = metadata.residents.reduce((acc, name) => {
+          if (!name || name === "<>" || name === " ") return acc;
+          
+          acc[name] = {
+            name,
+            pgyLevel: pgyLevels[name] || 2 // Default to PGY2 if not available
+          };
+          return acc;
+        }, {} as { [name: string]: { name: string; pgyLevel: PGYLevel } });
+        
+        dispatch({
+          type: "LOAD_SAVED_SCHEDULE",
+          payload: {
+            schedule: scheduleData,
+            metadata,
+            residents,
+            rawInput
+          }
+        });
+      } catch (error) {
+        console.error("Error loading saved schedule, falling back to default data:", error);
+        loadDefaultSchedule();
+      }
+    } else {
+      // No saved schedules, load the default data
+      console.log("No saved schedules found, loading default schedule data...");
+      loadDefaultSchedule();
+    }
+  }, []);
+  
+  // Function to load the default schedule data
+  const loadDefaultSchedule = () => {
+    console.log("Loading default schedule from JSON data...");
+    try {
+      // Use the defaultScheduleData which is tab-delimited for Excel parser
+      parseSchedule(defaultScheduleData, true);
+    } catch (error) {
+      console.error("Error loading default schedule data:", error);
+    }
+  };
   
   const parseSchedule = (input: string, isExcelFormat: boolean = false) => {
     let parsedData;
