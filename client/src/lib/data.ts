@@ -33,13 +33,13 @@ export const assignmentClassification: AssignmentClassification = {
   },
   "NSLIJ:DM:PULM:MICU-": {
     type: "Required",
-    swappable: "No",
-    notes: "Assumed not swappable. Assumed working day."
+    swappable: "Conditional",
+    notes: "Can only swap with Elective (C7). Is a working day."
   },
   "NSLIJ:DM:IM:Team-": {
     type: "Required",
-    swappable: "No",
-    notes: "Assumed not swappable. Assumed working day."
+    swappable: "Conditional",
+    notes: "Can only swap with Elective (C7). Is a working day."
   },
   "El-": {
     type: "Elective",
