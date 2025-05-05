@@ -29,7 +29,7 @@ type ScheduleContextType = {
 };
 
 // Create the context with a default value that will be overridden
-const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
+export const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
 
 // Initial state
 const initialState: ScheduleState = {

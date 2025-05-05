@@ -7,18 +7,23 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { useSchedule } from "@/hooks/useSchedule";
+import { useContext } from "react";
+import { ScheduleContext } from "@/context/ScheduleContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateForDisplay, getAssignmentTypeBadgeColor } from "@/lib/utils";
 
 export default function SwapFinderForm() {
   const [isSearching, setIsSearching] = useState(false);
+  const context = useContext(ScheduleContext);
+  if (!context) {
+    throw new Error("SwapFinderForm must be used within a ScheduleProvider");
+  }
   const { 
     state, 
     setCurrentResident, 
     setCurrentDate,
     findValidSwaps
-  } = useSchedule();
+  } = context;
   
   const { toast } = useToast();
   const { residents, schedule, metadata, currentResident, currentDate } = state;

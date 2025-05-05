@@ -1,204 +1,297 @@
-import { AssignmentClassification, PGYLevel } from "./types";
+// data.ts
 
-// PGY level data for residents
+// --- Type Definitions ---
+
+/**
+ * Represents the PGY level of a resident.
+ */
+export type PGYLevel = 1 | 2 | 3 | number; // Using number for flexibility if needed
+
+/**
+ * Details about an assignment's classification and rules.
+ */
+export interface AssignmentDetails {
+  type: "Required" | "Elective" | "Clinic" | "Status" | "Admin" | "TBD";
+  swappable: "Yes" | "No" | "Conditional";
+  pgyRules?: string; // Optional PGY rule text
+  notes: string;
+}
+
+/**
+ * Maps assignment patterns (strings) to their details.
+ */
+export interface AssignmentClassification {
+  [pattern: string]: AssignmentDetails;
+}
+
+// --- Data Exports ---
+
+/**
+ * Placeholder for resident PGY level data.
+ * Structure: { "Resident Name": PGYLevel, ... }
+ * This should be populated based on actual resident data.
+ */
 export const residentsData: { [name: string]: PGYLevel } = {
-  // This is just initial data - will be populated from the imported schedule
-  // and can be overridden by the user
+  // Example (replace with actual data):
+  // "Bulsara, Kishen": 2,
+  // "Chen, Anne": 3,
+  // ...
 };
 
-// Assignment classification based on the requirements document
+/**
+ * Defines the rules for classifying and determining swappability of assignments.
+ * Keys are patterns (often prefixes) used to match assignment codes from the schedule.
+ * The matching logic should prioritize longer, more specific matches first.
+ */
 export const assignmentClassification: AssignmentClassification = {
-  // Basic statuses
-  "OFF": {
-    type: "Status",
-    swappable: "Yes",
-    notes: "Can be swapped if rules met. Not a working day."
-  },
+  // --- Explicitly Non-Swappable (Rule C2) ---
   "NSLIJ:DM:IM:Vacation": {
     type: "Status",
     swappable: "No",
-    notes: "Cannot be swapped. Not a working day."
+    notes: "Cannot be swapped (C2). Not a working day.",
   },
-  
-  // MAR assignments - swappable with PGY restrictions (this will be used as a prefix match)
   "NSLIJ:DM:IM:LOA-Medical": {
     type: "Status",
     swappable: "No",
-    notes: "Cannot be swapped. Not a working day."
+    notes: "Cannot be swapped (C2). Not a working day.",
   },
   "NSLIJ:DM:IM:Clinic-": {
-    type: "Required",
+    // Prefix Match
+    type: "Clinic", // Corrected Type
     swappable: "No",
-    notes: "Cannot be swapped. Is a working day."
+    notes: "Cannot be swapped (C2). Is a working day.",
   },
-  "NSLIJ:DM:PULM:MICU-": {
-    type: "Required",
-    swappable: "Conditional",
-    notes: "Can only swap with Elective (C7). Is a working day."
-  },
-  "NSLIJ:DM:IM:Team-": {
-    type: "Required",
-    swappable: "Conditional",
-    notes: "Can only swap with Elective (C7). Is a working day."
-  },
-  "El-": {
-    type: "Elective",
-    swappable: "Yes",
-    notes: "Standard elective. Working day (Mon-Fri)."
-  },
-  "EI-": {
-    type: "Elective",
-    swappable: "Yes",
-    notes: "Assumed Elective. Working day (Mon-Fri)."
-  },
-  "CARD:El-": {
-    type: "Elective",
-    swappable: "Yes",
-    notes: "Cardiology Elective. Working day (Mon-Fri)."
-  },
-  "CARD:CCU-": {
-    type: "Elective",
-    swappable: "Yes",
-    notes: "CCU Elective. Confirm Sat/Sun working status. Default: Mon-Fri work."
-  },
-  "NSLIJ:DM:IM:MAR-": {
-    type: "Required",
-    swappable: "Conditional",
-    pgyRules: "Recipient must be PGY3.",
-    notes: "Medical Admitting Resident shifts. Is a working day."
-  },
-  "DN:Neuro": {
-    type: "Required",
-    swappable: "No",
-    notes: "Neurology. Assumed not swappable. Assumed working day."
+
+  // --- Status Assignments ---
+  OFF: {
+    type: "Status",
+    swappable: "Yes", // Swappable per C6, subject to C7 compatibility
+    notes: "Can be swapped with Elective/Status per C7. Not a working day.",
   },
   "NSLIJ:DM:IM:Board-Prep": {
     type: "Status",
-    swappable: "Conditional",
+    swappable: "Conditional", // Swappable per C6, subject to C5 and C7
     pgyRules: "Both residents must be PGY3",
-    notes: "Can be swapped by PGY3s with PGY3s. Not a working day."
+    notes:
+      "Can swap with Elective/Status per C7. Not a working day. Requires PGY3.",
   },
-  "NSLIJ:DM:IM:Uganda": {
-    type: "Elective",
-    swappable: "Yes",
-    notes: "International Elective. Assumed working day (Mon-Fri)."
+
+  // --- Required Assignments (Conditionally Swappable with Electives - Rule C7) ---
+  "NSLIJ:DM:PULM:MICU-": {
+    // Prefix Match
+    type: "Required",
+    swappable: "Conditional",
+    notes:
+      "Can only swap with Elective (C7). **Confirm Type.** Assumed working day.",
+  },
+  "NSLIJ:DM:IM:Team-": {
+    // Prefix Match
+    type: "Required",
+    swappable: "Conditional",
+    notes: "Can only swap with Elective (C7). Is a working day.",
+  },
+  "NSLIJ:DM:IM:MAR-": {
+    // Prefix Match
+    type: "Required",
+    swappable: "Conditional",
+    pgyRules: "Recipient must be PGY3.", // Specific PGY rule (C4)
+    notes:
+      "Can only swap with Elective (C7). Is a working day. Requires PGY3 recipient.",
+  },
+  "DN:Neuro": {
+    // Prefix Match (covers DN:Neuro and DN:Neuro-Consult)
+    type: "Required",
+    swappable: "Conditional", // Corrected Swappable status
+    notes:
+      "Can only swap with Elective (C7). **Confirm Type.** Assumed working day.",
   },
   "NSLIJ:DM:IM:Chief": {
-    type: "Admin",
-    swappable: "No",
-    notes: "Chief Resident duties. Assumed not swappable. Assumed working day."
+    type: "Required", // Corrected Type
+    swappable: "Conditional", // Corrected Swappable status
+    notes:
+      "Can only swap with Elective (C7). **Confirm Type.** Assumed working day.",
+  },
+
+  // --- Elective Assignments (Generally Swappable - Rule C7) ---
+  "El-": {
+    // Prefix Match (e.g., El-Research)
+    type: "Elective",
+    swappable: "Yes",
+    notes:
+      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
+  },
+  "EI-": {
+    // Prefix Match (e.g., EI-Pulm-LIJ)
+    type: "Elective",
+    swappable: "Yes",
+    notes:
+      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
+  },
+  "CARD:El-": {
+    // Prefix Match
+    type: "Elective",
+    swappable: "Yes",
+    notes:
+      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
+  },
+  "CARD:CCU-": {
+    // Prefix Match
+    type: "Elective",
+    swappable: "Yes",
+    notes:
+      "Can swap with Elective/Required/Status per C7. **Confirm Sat/Sun working.**",
+  },
+  "NSLIJ:DM:IM:Uganda": {
+    type: "Elective", // Assumed
+    swappable: "Yes", // Assumed
+    notes:
+      "**Confirm Type.** Can swap with Elective/Required/Status per C7. Working (M-F).",
   },
   "NSLIJ:DM:GERI:El-Geri": {
     type: "Elective",
     swappable: "Yes",
-    notes: "Geriatrics Elective. Working day (Mon-Fri)."
+    notes:
+      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
   },
   "NSLIJ:DM:GI:El-GI-": {
+    // Prefix Match
     type: "Elective",
     swappable: "Yes",
-    notes: "GI Elective. Working day (Mon-Fri)."
+    notes:
+      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
   },
   "NSLIJ:DM:HO:El-HemOnc-NS": {
     type: "Elective",
     swappable: "Yes",
-    notes: "Hem/Onc Elective. Working day (Mon-Fri)."
+    notes:
+      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
   },
   "NSLIJ:DM:ID:El-ID-NS": {
     type: "Elective",
     swappable: "Yes",
-    notes: "ID Elective. Working day (Mon-Fri)."
+    notes:
+      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
   },
   "NSLIJ:DM:IM:El-Procedure-LIJ": {
     type: "Elective",
     swappable: "Yes",
-    notes: "Procedure Elective. Working day (Mon-Fri)."
+    notes:
+      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
   },
   "NSLIJ:DM:IM:El-Pri-Care": {
     type: "Elective",
     swappable: "Yes",
-    notes: "Primary Care Elective. Working day (Mon-Fri)."
+    notes:
+      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
   },
   "NSLIJ:DM:IM:Valley-Stream": {
-    type: "Elective",
-    swappable: "Yes",
-    notes: "VS Elective. Assumed working day (Mon-Fri)."
+    // Prefix Match
+    type: "Elective", // Assumed
+    swappable: "Yes", // Assumed
+    notes:
+      "**Confirm Type.** Can swap with Elective/Required/Status per C7. Working (M-F).",
   },
   "NSLIJ:DM:PULM:El-Pulm-NS": {
     type: "Elective",
     swappable: "Yes",
-    notes: "Pulm Elective. Working day (Mon-Fri)."
-  }
+    notes:
+      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
+  },
+  // Add entries for any other unique codes encountered ('TBD' type initially if unsure)
 };
 
-// Demo data for schedule testing
-export const demoScheduleHTML = `<table border="1">
+/**
+ * Placeholder for demo schedule HTML string.
+ * This should be replaced with the actual HTML table string or loaded dynamically.
+ */
+export const demoScheduleHTML = `
+<table border="1">
   <tr>
     <th>Resident</th>
     <th>Mon 5/1</th>
     <th>Tue 5/2</th>
-    <th>Wed 5/3</th>
-    <th>Thu 5/4</th>
-    <th>Fri 5/5</th>
-    <th bgcolor="#ffdc64">Sat 5/6</th>
-    <th bgcolor="#ffdc64">Sun 5/7</th>
-  </tr>
+    </tr>
   <tr>
     <td>Bulsara, Kishen</td>
     <td>NSLIJ:DM:IM:Team-NS-2-S</td>
     <td>NSLIJ:DM:IM:Team-NS-2-S</td>
-    <td>NSLIJ:DM:IM:Team-NS-2-S</td>
-    <td>NSLIJ:DM:IM:Team-NS-2-S</td>
-    <td>NSLIJ:DM:IM:Team-NS-2-S</td>
-    <td>OFF</td>
-    <td>OFF</td>
-  </tr>
-  <tr>
-    <td>Wong, Kevin</td>
-    <td>CARD:El-Cards-LIJ</td>
-    <td>CARD:El-Cards-LIJ</td>
-    <td>CARD:El-Cards-LIJ</td>
-    <td>CARD:El-Cards-LIJ</td>
-    <td>CARD:El-Cards-LIJ</td>
-    <td>OFF</td>
-    <td>OFF</td>
-  </tr>
-  <tr>
-    <td>Patel, Anisha</td>
-    <td>NSLIJ:DM:IM:Team-NS-1-L</td>
-    <td>NSLIJ:DM:IM:Team-NS-1-L</td>
-    <td>OFF</td>
-    <td>NSLIJ:DM:IM:Team-NS-1-L</td>
-    <td>NSLIJ:DM:IM:Team-NS-1-L</td>
-    <td>NSLIJ:DM:IM:Team-NS-1-L</td>
-    <td>OFF</td>
-  </tr>
-  <tr>
-    <td>Johnson, Marcus</td>
-    <td>El-Research</td>
-    <td>El-Research</td>
-    <td>El-Research</td>
-    <td>El-Research</td>
-    <td>El-Research</td>
-    <td>OFF</td>
-    <td>OFF</td>
-  </tr>
-  <tr>
-    <td>Rodriguez, Elena</td>
-    <td>OFF</td>
-    <td>NSLIJ:DM:IM:MAR-Z</td>
-    <td>NSLIJ:DM:IM:MAR-Z</td>
-    <td>NSLIJ:DM:IM:MAR-Z</td>
-    <td>OFF</td>
-    <td>OFF</td>
-    <td>OFF</td>
-  </tr>
-</table>`;
+    </tr>
+  </table>
+`;
 
-// Demo PGY data
-export const demoPGYData = {
-  "Bulsara, Kishen": 2,
-  "Wong, Kevin": 3,
-  "Patel, Anisha": 1,
-  "Johnson, Marcus": 2,
-  "Rodriguez, Elena": 3
+/**
+ * Placeholder for demo PGY data.
+ * Structure: { "Resident Name": PGYLevel, ... }
+ * This should be replaced with actual PGY data corresponding to the schedule.
+ */
+export const demoPGYData: { [name: string]: PGYLevel } = {
+  // Example (replace with actual data matching demoScheduleHTML or your actual schedule):
+  // "Bulsara, Kishen": 2,
+  // ...
 };
+
+// --- Helper Functions ---
+
+/**
+ * Function to get the classification details for a specific assignment code.
+ * Handles prefix matching based on the keys in assignmentClassification.
+ * Prioritizes longer matches first.
+ *
+ * @param {string} assignmentCode - The assignment code from the schedule (e.g., "NSLIJ:DM:IM:Team-NS-2-S").
+ * @returns {AssignmentDetails} The details object for the assignment, or a default 'TBD' object if no match found.
+ */
+export function getAssignmentDetails(
+  assignmentCode: string | null | undefined,
+): AssignmentDetails {
+  // Handle empty, null, or undefined codes gracefully
+  if (!assignmentCode) {
+    // Return a default object for 'OFF' or similar if empty cells should be treated as OFF
+    // Or return a specific 'Empty' status if needed
+    return {
+      type: "Status",
+      swappable: "No",
+      notes: "Empty or invalid assignment code",
+    };
+  }
+
+  // Trim whitespace which might exist in HTML table cells
+  const trimmedCode = assignmentCode.trim();
+  if (!trimmedCode) {
+    return {
+      type: "Status",
+      swappable: "No",
+      notes: "Empty or whitespace assignment code",
+    };
+  }
+
+  // Get keys and sort by length descending to prioritize specific matches
+  const patterns = Object.keys(assignmentClassification).sort(
+    (a, b) => b.length - a.length,
+  );
+
+  for (const pattern of patterns) {
+    // 1. Check for exact match first (most specific)
+    if (trimmedCode === pattern) {
+      return assignmentClassification[pattern];
+    }
+    // 2. Check for prefix match if pattern ends with '-'
+    if (pattern.endsWith("-") && trimmedCode.startsWith(pattern.slice(0, -1))) {
+      // Add extra checks here if a more specific non-prefix rule exists that might
+      // otherwise be caught by this prefix rule.
+      // Example: if "NSLIJ:DM:IM:Team-Special" existed with different rules than "NSLIJ:DM:IM:Team-"
+      // if (pattern === "NSLIJ:DM:IM:Team-" && trimmedCode === "NSLIJ:DM:IM:Team-Special") continue;
+
+      return assignmentClassification[pattern];
+    }
+  }
+
+  // Default if no pattern matches
+  console.warn(
+    `No classification found for assignment code: "${trimmedCode}". Defaulting to TBD.`,
+  );
+  return {
+    type: "TBD",
+    swappable: "No", // Default to non-swappable if unknown
+    notes: "Unknown assignment code - needs classification.",
+  };
+}

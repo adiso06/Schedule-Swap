@@ -2,14 +2,19 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useSchedule } from "@/hooks/useSchedule";
+import { useContext } from "react";
+import { ScheduleContext } from "@/context/ScheduleContext";
 import { demoScheduleHTML } from "@/lib/data";
 import PGYLevelEditor from "./PGYLevelEditor";
 
 export default function ScheduleImportPanel() {
   const [scheduleHtml, setScheduleHtml] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { parseSchedule } = useSchedule();
+  const context = useContext(ScheduleContext);
+  if (!context) {
+    throw new Error("ScheduleImportPanel must be used within a ScheduleProvider");
+  }
+  const { parseSchedule } = context;
   const { toast } = useToast();
 
   const handleParseSchedule = () => {
@@ -120,7 +125,7 @@ export default function ScheduleImportPanel() {
   };
 
   // Get the current schedule state
-  const { state } = useSchedule();
+  const { state } = context;
   const hasScheduleData = state.metadata.isLoaded;
 
   return (
@@ -204,7 +209,7 @@ export default function ScheduleImportPanel() {
           <div className="mb-4">
             <Button 
               variant="outline" 
-              onClick={() => useSchedule().reset()}
+              onClick={() => context.reset()}
               className="text-red-600 border-red-600 hover:bg-red-50"
             >
               Reset Schedule Data
