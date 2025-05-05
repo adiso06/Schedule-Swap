@@ -16,9 +16,9 @@ export default defineConfig({
         ]
       : []),
   ],
-  // In development mode, use '/'
-  // In GitHub Pages mode, use '/' - we'll handle path resolution at runtime
-  base: '/',
+  // Set base path to be relative instead of absolute
+  // This ensures assets are loaded correctly regardless of the URL path
+  base: './',
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client/src"),

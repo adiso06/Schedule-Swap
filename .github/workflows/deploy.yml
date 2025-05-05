@@ -36,9 +36,51 @@ jobs:
       - name: Create .nojekyll file
         run: touch ./dist/.nojekyll
 
-      - name: Create index.html in repository root for redirecting
+      - name: Setup directory structure for GitHub Pages
         run: |
-          # Create a root index.html that redirects to the app location
+          # Save the original build
+          mkdir -p ./tmp-build
+          cp -r ./dist/* ./tmp-build/
+          
+          # Create swap directory
+          mkdir -p ./dist/swap
+          
+          # Copy build files to swap directory (but not index.html yet)
+          cp -r ./tmp-build/assets ./dist/swap/
+          
+          # Create app index.html in swap directory (copy the original)
+          cp ./tmp-build/index.html ./dist/swap/index.html
+          
+          # Create 404.html at root to handle SPA navigation
+          cat > ./dist/404.html << EOF
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <title>Schedule Swap</title>
+              <script>
+                // Store the URL we tried to reach for later redirect
+                sessionStorage.setItem('redirect-path', window.location.pathname);
+                
+                // Extract repo name from path
+                var pathSegments = window.location.pathname.split('/');
+                var repoName = pathSegments[1] || '';
+                
+                // Redirect to app root
+                if (repoName) {
+                  window.location.href = '/' + repoName + '/swap/';
+                } else {
+                  window.location.href = '/swap/';
+                }
+              </script>
+            </head>
+            <body>
+              Page not found. Redirecting to Schedule Swap application...
+            </body>
+          </html>
+          EOF
+          
+          # Create root index.html with redirect
           cat > ./dist/index.html << EOF
           <!DOCTYPE html>
           <html>
@@ -46,15 +88,20 @@ jobs:
               <meta charset="utf-8">
               <title>Schedule Swap</title>
               <script>
-                // Get the repository name dynamically
+                // Simple redirect to the swap directory
                 var pathSegments = window.location.pathname.split('/');
                 var repoName = pathSegments[1] || '';
                 
-                // Redirect to swap directory
-                if (repoName) {
-                  window.location.replace('/' + repoName + '/swap/');
-                } else {
-                  window.location.replace('/swap/');
+                // Only redirect if we're at the repo root
+                var isRepoRoot = pathSegments.length <= 2 || 
+                                (pathSegments.length === 3 && pathSegments[2] === '');
+                                
+                if (isRepoRoot) {
+                  if (repoName && repoName !== '') {
+                    window.location.href = '/' + repoName + '/swap/';
+                  } else {
+                    window.location.href = '/swap/';
+                  }
                 }
               </script>
             </head>
@@ -64,12 +111,14 @@ jobs:
           </html>
           EOF
           
-          # Create swap directory
-          mkdir -p ./dist/swap
+          # Create 404.html in the swap directory too
+          cp ./dist/404.html ./dist/swap/404.html
           
-          # Copy the build to the swap directory
-          cp -r ./dist/*.* ./dist/swap/ 2>/dev/null || true
-          cp -r ./dist/assets ./dist/swap/
+          # Create CNAME file if deploying to custom domain
+          echo "adityasood.me" > ./dist/CNAME
+          
+          # Clean up
+          rm -rf ./tmp-build
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

@@ -11,19 +11,28 @@ const detectBasePath = (): string => {
     return ''; // Default for SSR
   }
   
-  const { pathname } = window.location;
+  const { hostname, pathname } = window.location;
   
-  // Extract repository name and base path from the URL
-  // For URLs like https://username.github.io/repo-name/...
-  if (window.location.hostname.endsWith('github.io')) {
-    const pathParts = pathname.split('/');
-    if (pathParts.length > 1) {
-      // First part after the domain should be the repo name
-      return '/' + pathParts[1]; // e.g., /Schedule-Swap
+  // For GitHub Pages, we need to detect the base path that includes the repository name
+  if (hostname.endsWith('github.io')) {
+    const pathParts = pathname.split('/').filter(Boolean);
+    
+    // If there's at least one path segment (the repo name)
+    if (pathParts.length > 0) {
+      // Check if we're already in the /swap/ directory
+      const repoName = pathParts[0];
+      const isInSwapDir = pathParts.length > 1 && pathParts[1] === 'swap';
+      
+      // If we're in the swap directory, only include the repo name
+      if (isInSwapDir) {
+        return '/' + repoName;
+      }
+      
+      // Otherwise, construct the full path
+      return '/' + pathParts.join('/');
     }
   }
   
-  // For custom domains or localhost, no path prefix needed
   return '';
 };
 
@@ -59,6 +68,13 @@ export function getGitHubPagesPath(path: string): string {
 export function getAssetUrl(assetPath: string): string {
   // Remove leading slash if present
   const normalizedPath = assetPath.startsWith('/') ? assetPath.substring(1) : assetPath;
+  
+  // If we're in the /swap/ directory, adjust paths for assets
+  if (typeof window !== 'undefined' && 
+      window.location.pathname.includes('/swap/')) {
+    return normalizedPath;
+  }
+  
   return `${BASE_PATH}/${normalizedPath}`;
 }
 
