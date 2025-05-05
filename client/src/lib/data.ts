@@ -58,8 +58,8 @@ export const assignmentClassification: AssignmentClassification = {
   "NSLIJ:DM:IM:Clinic-": {
     // Prefix Match
     type: "Clinic", // Corrected Type
-    swappable: "No",
-    notes: "Cannot be swapped (C2). Is a working day.",
+    swappable: "Yes", // Changed to Yes to allow clinic swaps
+    notes: "Can be swapped. Is a working day.",
   },
 
   // --- Status Assignments ---

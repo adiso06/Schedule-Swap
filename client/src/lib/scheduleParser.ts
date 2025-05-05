@@ -222,14 +222,37 @@ export function getAssignmentInfo(
     ([pattern, _]) => code === pattern || code.startsWith(pattern)
   );
   
-  // Default if no match
+  // Default if no match - use a best guess approach
   if (!matchingEntry) {
+    // For vacation entries
+    if (code.includes("Vacation")) {
+      return {
+        code,
+        type: "Status" as AssignmentType,
+        swappable: SwappableStatus.Yes, // Default vacations to swappable
+        isWeekend,
+        isWorkingDay: false
+      };
+    }
+    
+    // For OFF entries
+    if (code === "OFF") {
+      return {
+        code,
+        type: "Status" as AssignmentType,
+        swappable: SwappableStatus.Yes,
+        isWeekend,
+        isWorkingDay: false
+      };
+    }
+    
+    // For unclassified assignments, assume they are Required but still swappable
     return {
       code,
-      type: "Required" as AssignmentType,
-      swappable: SwappableStatus.No,
+      type: "Required" as AssignmentType,  // Default to Required type
+      swappable: SwappableStatus.Yes,      // Default to swappable
       isWeekend,
-      isWorkingDay: code !== "OFF" && !code.includes("Vacation") && !code.includes("LOA")
+      isWorkingDay: true                   // Default to working day
     };
   }
   
