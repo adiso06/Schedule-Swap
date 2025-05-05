@@ -11,6 +11,7 @@ import { useContext } from "react";
 import { ScheduleContext } from "@/context/ScheduleContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateForDisplay, getAssignmentTypeBadgeColor } from "@/lib/utils";
+import { getUserFriendlyLabel } from "@/lib/assignmentLabels";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
@@ -313,11 +314,9 @@ export default function SwapFinderForm() {
               </span>
             </div>
             
-            {/* Show user-friendly description if available */}
+            {/* Show user-friendly description */}
             <div className="text-sm text-gray-600 mt-1">
-              {currentAssignment.userFriendlyLabel && (
-                <span>{currentAssignment.userFriendlyLabel}</span>
-              )}
+              <span>{getUserFriendlyLabel(currentAssignment.code)}</span>
             </div>
           </div>
         </div>

@@ -254,7 +254,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
           
           acc[name] = {
             name,
-            pgyLevel: pgyLevels[name] || 2 // Default to PGY2 if not available
+            pgyLevel: pgyLevels[name] || (2 as PGYLevel) // Default to PGY2 if not available
           };
           return acc;
         }, {} as { [name: string]: { name: string; pgyLevel: PGYLevel } });
@@ -382,7 +382,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         
         acc[name] = {
           name,
-          pgyLevel: (pgyLevels as Record<string, PGYLevel>)[name] || 2 // Default to PGY2 if not available
+          pgyLevel: (pgyLevels as Record<string, PGYLevel>)[name] || (2 as PGYLevel) // Default to PGY2 if not available
         };
         return acc;
       }, {} as { [name: string]: { name: string; pgyLevel: PGYLevel } });

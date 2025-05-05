@@ -115,17 +115,30 @@ export default function ScheduleVisualization() {
                   </td>
                   {weekDays.map((day) => {
                     const assignment = schedule[residentName]?.[day.dateStr];
+                    const friendlyLabel = assignment?.code ? getUserFriendlyLabel(assignment.code) : "";
+                    
                     return (
                       <td
                         key={day.dateStr}
-                        className={`py-2 px-3 border-b border-r border-gray-200 text-sm text-center ${
+                        className={`py-2 px-2 border-b border-r border-gray-200 text-sm ${
                           day.isWeekend ? "bg-yellow-50" : ""
                         }`}
-                        title={assignment?.code ? getUserFriendlyLabel(assignment.code) : ""}
+                        title={`${assignment?.code || ""} - ${friendlyLabel}`}
                       >
-                        <div className="truncate max-w-[120px] mx-auto">
-                          {assignment?.code || ""}
-                        </div>
+                        {assignment?.code ? (
+                          <div className="flex flex-col items-center">
+                            <div className="truncate text-xs text-gray-500 max-w-[120px] mx-auto">
+                              {assignment.code}
+                            </div>
+                            <div className="truncate max-w-[120px] mx-auto font-medium">
+                              {friendlyLabel}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="truncate max-w-[120px] mx-auto">
+                            {assignment?.code || ""}
+                          </div>
+                        )}
                       </td>
                     );
                   })}
