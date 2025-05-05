@@ -201,10 +201,6 @@ export const assignmentClassification: AssignmentClassification = {
 };
 
 /**
- * Placeholder for demo schedule HTML string.
- * This should be replaced with the actual HTML table string or loaded dynamically.
- */
-/**
  * Default schedule data in tab-delimited format for loading as the baseline schedule.
  * This is the schedule data that will be shown if users don't upload their own.
  */
@@ -217,8 +213,8 @@ Babadzhanov, Marianna\tPGY-1\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNS
 Bevagna, Holly\tPGY-1\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tNSLIJ:DM:IM:Vacation\tOFF\tNSLIJ:DM:PULM:MICU-LIJ-N\tOFF\tNSLIJ:DM:PULM:MICU-LIJ-N\tNSLIJ:DM:PULM:MICU-LIJ-N\tNSLIJ:DM:PULM:MICU-LIJ-N\tNSLIJ:DM:PULM:MICU-LIJ-N\tMICU-LIJ-Shw-PM\tOFF\tMICU-LIJ-Shw-PM\tOFF\tOFF\tMICU-LIJ-Shw-Y\tMICU-LIJ-Shw-G\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Clinic-865\tNSLIJ:DM:IM:Team-LIJ-6-L\tNSLIJ:DM:IM:Team-LIJ-6-S\tNSLIJ:DM:IM:Team-LIJ-6-L\tNSLIJ:DM:IM:Team-LIJ-6-S\tNSLIJ:DM:IM:Team-LIJ-6-L\tOFF\tNSLIJ:DM:IM:Team-LIJ-6-L\tNSLIJ:DM:IM:Team-LIJ-6-S\tNSLIJ:DM:IM:Team-LIJ-6-L\tNSLIJ:DM:IM:Team-LIJ-6-S\tNSLIJ:DM:IM:Team-LIJ-6-L\tNSLIJ:DM:IM:Team-LIJ-6-S\tOFF\tNSLIJ:DM:IM:Team-LIJ-6-S\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-S\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-S\tNSLIJ:DM:IM:Team-NS-5-L\tOFF\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-S\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-S\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-S\tOFF\tNSLIJ:DM:IM:Team-NS-5-S\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-S\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-L\tNSLIJ:DM:IM:Team-NS-5-L`;
 
 /**
- * Basic demo schedule HTML string.
- * Used for quick testing and demonstration purposes.
+ * Placeholder for demo schedule HTML string.
+ * This should be replaced with the actual HTML table string or loaded dynamically.
  */
 export const demoScheduleHTML = `
 <table border="1">
