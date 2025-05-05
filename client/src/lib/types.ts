@@ -94,6 +94,13 @@ export interface ValidationResult {
   reason?: string;
 }
 
+// Payback swap options
+export interface PaybackSwap {
+  date: string;
+  residentAElectiveAssignment: Assignment;
+  residentBRequiredAssignment: Assignment;
+}
+
 // Schedule state in context
 export interface ScheduleState {
   residents: { [name: string]: Resident };
