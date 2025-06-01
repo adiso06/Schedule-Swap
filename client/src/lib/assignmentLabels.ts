@@ -132,6 +132,10 @@ export const assignmentMappings: AssignmentInterpretation[] = [
   }, // Exact match if code is always this
   { pattern: "NSLIJ:DM:PULM:El-Pulm-NS", label: "NS Pulm Elective" },
   { pattern: "NSLIJ:DM:PULM:El-Pulm-LIJ", label: "LIJ Pulm Elective" },
+  { pattern: "NSLIJ:DM:PULM:El-US-LIJ", label: "LIJ US Elective" },
+  { pattern: "NSLIJ:DM:NEPH:El-Renal-LIJ", label: "LIJ Nephro Elective" },
+  { pattern: "NSLIJ:DM:ENDO:El-Endo-LIJ", label: "LIJ Endo Elective" },
+  { pattern: "Paternity", label: "Paternity Leave" },
 
   // --- Prefixes (Longer Before Shorter) ---
   // Note: Specific MICU/MAR/Team codes above will match before these prefixes

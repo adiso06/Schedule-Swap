@@ -5,6 +5,7 @@ export type AssignmentType =
   | "Status"
   | "Admin"
   | "Clinic"
+  | "Vacation"
   | "TBD";
 
 // PGY levels
@@ -80,6 +81,7 @@ export interface PotentialSwap {
   assignmentB: Assignment;
   date: string;
   validationResults: ValidationResult;
+  isHypothetical?: boolean; // Added for simulation mode
 }
 
 // Validation result for a potential swap
@@ -91,6 +93,7 @@ export interface ValidationResult {
   isBoardPrepRestrictionValid: boolean;
   isAssignmentTypeCompatible: boolean; // Added for rule C7
   isValid: boolean;
+  isHypothetical?: boolean; // Added for simulation mode
   reason?: string;
 }
 
@@ -110,4 +113,9 @@ export interface ScheduleState {
   currentDate: string | null;
   validSwaps: PotentialSwap[];
   invalidReason: string | null;
+  isSimulationModeActive: boolean; // Added for simulation mode
+  // Payback context
+  currentPaybackResidentA: string | null;
+  currentPaybackResidentB: string | null;
+  isPaybackModeActive: boolean;
 }

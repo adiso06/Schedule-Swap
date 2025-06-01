@@ -177,6 +177,13 @@ export function parseScheduleHTML(html: string): {
         // Determine assignment type and swappability
         const assignmentInfo = getAssignmentInfo(assignmentCode, isWeekend);
         
+        // For clinic assignments on weekends, override swappable and working status
+        // but keep the original clinic code for display
+        if (isWeekend && assignmentCode.startsWith("NSLIJ:DM:IM:Clinic-")) {
+          assignmentInfo.swappable = SwappableStatus.No;
+          assignmentInfo.isWorkingDay = false;
+        }
+        
         // Add to schedule
         schedule[residentName][dateStr] = assignmentInfo;
       }

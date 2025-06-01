@@ -1,34 +1,34 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import { useContext } from "react";
 import { ScheduleContext } from "@/context/ScheduleContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateForDisplay, getAssignmentTypeBadgeColor } from "@/lib/utils";
 import { getUserFriendlyLabel } from "@/lib/assignmentLabels";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { format, parse } from "date-fns";
+import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 
 export default function SwapFinderForm() {
+  // UI state
   const [isSearching, setIsSearching] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [residentInput, setResidentInput] = useState("");
   const [filteredResidents, setFilteredResidents] = useState<string[]>([]);
   const [dateInput, setDateInput] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   
+  // Feature flags
+  const [autoSearchEnabled] = useState(false); // Disabled by default - user must click button
+  
+  // Context
   const context = useContext(ScheduleContext);
   if (!context) {
     throw new Error("SwapFinderForm must be used within a ScheduleProvider");
   }
+  
   const { 
     state, 
     setCurrentResident, 
@@ -39,28 +39,94 @@ export default function SwapFinderForm() {
   const { toast } = useToast();
   const { residents, schedule, metadata, currentResident, currentDate } = state;
   
-  // Set default date to today or first available date
+  // Run the actual search
+  const executeSearch = useCallback(() => {
+    if (!currentResident || !currentDate) return;
+    
+    console.log(`Executing search for ${currentResident} on ${currentDate}`);
+    setIsSearching(true);
+    
+    try {
+      findValidSwaps(currentResident, currentDate);
+    } catch (error) {
+      console.error("Search error:", error);
+      toast({
+        variant: "destructive",
+        title: "Search Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  }, [currentResident, currentDate, findValidSwaps, toast]);
+  
+  // Handle form submission
+  const handleFindSwaps = useCallback(() => {
+    if (!currentResident || !currentDate) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please select both a resident and date first",
+      });
+      return;
+    }
+    
+    executeSearch();
+    
+    // Only show toast for manual searches (button clicks)
+    toast({
+      title: "Search Complete",
+      description: "Found possible swap options for the selected date",
+    });
+  }, [currentResident, currentDate, executeSearch, toast]);
+  
+  // Auto-search when current resident changes (but not on initial load)
   useEffect(() => {
-    if (!currentDate && metadata.dates.length > 0) {
-      setCurrentDate(metadata.dates[0]);
-      setDateInput(formatDateForDisplay(metadata.dates[0]));
+    if (currentResident) {
+      // Update input field
+      setResidentInput(currentResident);
+      
+      // Only auto-trigger search if this is a user-initiated change (not initial load)
+      if (autoSearchEnabled && currentDate && currentResident !== "") {
+        const timeoutId = setTimeout(() => {
+          executeSearch();
+        }, 300); // Debounce to prevent rapid firing
+        
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [currentResident, currentDate, autoSearchEnabled, executeSearch]);
+  
+  // Sync dateInput with currentDate from context
+  useEffect(() => {
+    if (currentDate) {
+      setDateInput(formatDateForDisplay(currentDate));
+    }
+  }, [currentDate]);
+  
+  // Set default date to today if available
+  useEffect(() => {
+    if (metadata.dates.length > 0 && !currentDate) {
+      // Try to use today's date if available in schedule
+      const today = new Date();
+      const todayStr = format(today, "yyyy-MM-dd");
+      
+      if (metadata.dates.includes(todayStr)) {
+        setCurrentDate(todayStr);
+        setDateInput(formatDateForDisplay(todayStr));
+      } else {
+        // Otherwise, use first available date
+        setCurrentDate(metadata.dates[0]);
+        setDateInput(formatDateForDisplay(metadata.dates[0]));
+      }
     }
   }, [metadata.dates, currentDate, setCurrentDate]);
   
-  // State for tracking keyboard navigation in dropdown
-  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
-  
-  // Initialize the resident input field with the current resident
-  useEffect(() => {
-    if (currentResident) {
-      setResidentInput(currentResident);
-    }
-  }, [currentResident]);
-  
-  // Handle resident filtering based on input
+  // Handle resident input filtering
   useEffect(() => {
     if (residentInput.trim() === "") {
       setFilteredResidents([]);
+      setCurrentResident(null);
       return;
     }
     
@@ -83,10 +149,24 @@ export default function SwapFinderForm() {
         return a.localeCompare(b);
       });
     
+    // Auto-select if there's an exact match
+    const exactMatch = filtered.find(name => name.toLowerCase() === lowercaseInput);
+    if (exactMatch) {
+      setCurrentResident(exactMatch);
+      setResidentInput(exactMatch);
+      setFilteredResidents([]);
+      return;
+    }
+    
+    // Clear current resident if input doesn't match exactly
+    if (currentResident && currentResident.toLowerCase() !== lowercaseInput) {
+      setCurrentResident(null);
+    }
+    
     setFilteredResidents(filtered);
     // Reset selected index when filtered list changes
     setSelectedIndex(-1);
-  }, [residentInput, residents]);
+  }, [residentInput, residents, setCurrentResident, currentResident]);
   
   // Handle date input changes
   const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,7 +177,7 @@ export default function SwapFinderForm() {
     for (const date of metadata.dates) {
       const formatted = formatDateForDisplay(date).toLowerCase();
       if (formatted.includes(input)) {
-        setCurrentDate(date);
+        setCurrentDate(date, true); // Preserve existing swaps when updating date
         return;
       }
     }
@@ -112,7 +192,7 @@ export default function SwapFinderForm() {
     
     // Check if this date is in our available dates
     if (metadata.dates.includes(dateStr)) {
-      setCurrentDate(dateStr);
+      setCurrentDate(dateStr, true); // Preserve existing swaps when updating date
       setDateInput(formatDateForDisplay(dateStr));
     } else {
       // Find the closest available date
@@ -127,7 +207,7 @@ export default function SwapFinderForm() {
         return prevDiff < currDiff ? prev : curr;
       }, metadata.dates[0]);
       
-      setCurrentDate(closest);
+      setCurrentDate(closest, true); // Preserve existing swaps when updating date
       setDateInput(formatDateForDisplay(closest));
       
       toast({
@@ -140,6 +220,7 @@ export default function SwapFinderForm() {
     setCalendarOpen(false);
   };
   
+  // Get current assignment for selected resident and date
   const getCurrentAssignment = () => {
     if (!currentResident || !currentDate || !schedule[currentResident]) {
       return null;
@@ -149,35 +230,6 @@ export default function SwapFinderForm() {
   };
   
   const currentAssignment = getCurrentAssignment();
-  
-  const handleFindSwaps = () => {
-    if (!currentResident || !currentDate) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please select both a resident and date first",
-      });
-      return;
-    }
-    
-    setIsSearching(true);
-    
-    try {
-      findValidSwaps(currentResident, currentDate);
-      toast({
-        title: "Search Complete",
-        description: "Found possible swap options for the selected date",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Search Error",
-        description: error instanceof Error ? error.message : "Failed to find swaps",
-      });
-    } finally {
-      setIsSearching(false);
-    }
-  };
   
   // Debug function to check what dates are available
   const logDates = () => {
@@ -334,11 +386,15 @@ export default function SwapFinderForm() {
       
       {/* Debug info for development */}
       {process.env.NODE_ENV === 'development' && (
-        <div className="text-xs text-gray-400 mt-2">
-          <p>Schedule loaded: {metadata.isLoaded ? "Yes" : "No"}</p>
-          <p>Dates available: {metadata.dates.length}</p>
-          <p>Residents: {Object.keys(residents).length}</p>
-          <button onClick={logDates} className="text-xs text-blue-400 underline">Debug Dates</button>
+        <div className="mt-2 p-2 text-xs border border-gray-200 rounded-md bg-gray-50">
+          <div>Current Resident: {currentResident || "none"}</div>
+          <div>Current Date: {currentDate || "none"}</div>
+          <button 
+            onClick={logDates}
+            className="mt-1 px-2 py-1 text-xs bg-gray-200 rounded"
+          >
+            Log Dates
+          </button>
         </div>
       )}
     </div>

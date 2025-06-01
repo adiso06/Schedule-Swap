@@ -1,31 +1,207 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSchedule } from "@/context/ScheduleContext";
-import { getAssignmentTypeBadgeColor, getAssignmentBgColor, formatDateForDisplay } from "@/lib/utils";
-import { getUserFriendlyLabel } from "@/lib/assignmentLabels";
 import { PotentialSwap, PaybackSwap } from "@/lib/types";
+import { getUserFriendlyLabel } from "@/lib/assignmentLabels";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
-import { ArrowLeft, Calendar, Clock, RefreshCw, Loader2 } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { ArrowLeft, Calendar, CheckCircle, Clock, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
 
 export default function SwapResults() {
+  // Global state from context - ALL hooks must be declared first
+  const { state, findPaybackSwaps, toggleSimulationMode, findValidSwaps } = useSchedule();
+  const { validSwaps, currentResident, currentDate, invalidReason, isSimulationModeActive } = state;
+  const { toast } = useToast();
+  
+  // Auto re-run search when simulation mode is toggled
+  useEffect(() => {
+    if (currentResident && currentDate) {
+      // Re-run the search when simulation mode changes
+      console.log(`Simulation mode changed to: ${isSimulationModeActive}, re-running search...`);
+      findValidSwaps(currentResident, currentDate);
+    }
+  }, [isSimulationModeActive, currentResident, currentDate, findValidSwaps]);
+  
+  // ALL useState hooks declared before any conditional logic
   const [selectedSwap, setSelectedSwap] = useState<PotentialSwap | null>(null);
   const [paybackSwaps, setPaybackSwaps] = useState<PaybackSwap[]>([]);
   const [isLoadingPayback, setIsLoadingPayback] = useState(false);
+  const [swapsWithPayback, setSwapsWithPayback] = useState<PotentialSwap[]>([]);
+  const [swapsWithoutPayback, setSwapsWithoutPayback] = useState<PotentialSwap[]>([]);
+  const [processingPaybackCheck, setProcessingPaybackCheck] = useState(false);
+  const [isAssignmentNonSwappable, setIsAssignmentNonSwappable] = useState<boolean>(false);
+  const [nonSwappableAssignmentCode, setNonSwappableAssignmentCode] = useState<string>("");
+
+  // ALL useEffect hooks declared before any conditional logic
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      const showNotSwappableWarning = (!!invalidReason || isAssignmentNonSwappable) && !isSimulationModeActive;
+      console.log("DEBUG SwapResults: Display Logic", {
+        validSwapsCount: validSwaps.length,
+        invalidReason,
+        showNoSwapsFound: validSwaps.length === 0 && !showNotSwappableWarning,
+        showNotSwappableWarning,
+        isSimulationModeActive,
+        processingPaybackCheck
+      });
+    }
+  }, [validSwaps.length, invalidReason, isAssignmentNonSwappable, isSimulationModeActive, processingPaybackCheck]);
   
-  const { state, findPaybackSwaps } = useSchedule();
-  const { validSwaps, currentResident, currentDate, invalidReason } = state;
-  const { toast } = useToast();
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && validSwaps.length > 0) {
+      console.log(`Found ${validSwaps.length} valid swaps for ${currentResident} on ${currentDate}`);
+    }
+  }, [validSwaps.length, currentResident, currentDate]);
   
-  // Don't show anything if no swaps have been searched for
+  useEffect(() => {
+    if (!currentResident || !currentDate) {
+      setIsAssignmentNonSwappable(false);
+      setNonSwappableAssignmentCode("");
+      return;
+    }
+    
+    // Check window global flag (set by context)
+    if ((window as any).nonSwappableAssignmentDetected) {
+      const details = (window as any).nonSwappableAssignmentDetails;
+      console.log("Found non-swappable assignment via window object:", details);
+      setIsAssignmentNonSwappable(true);
+      setNonSwappableAssignmentCode(details?.code || "Unknown");
+      return;
+    }
+    
+    // Direct check in the schedule data
+    try {
+      // Access the schedule from context directly
+      const assignment = state.schedule[currentResident]?.[currentDate];
+      if (assignment) {
+        console.log("Direct assignment check:", {
+          code: assignment.code,
+          swappable: assignment.swappable,
+          isNonSwappable: String(assignment.swappable) === "No" 
+        });
+        
+        // Check if this assignment is non-swappable
+        if (String(assignment.swappable) === "No") {
+          console.log("Found non-swappable assignment via direct check:", assignment);
+          setIsAssignmentNonSwappable(true);
+          setNonSwappableAssignmentCode(assignment.code);
+        } else {
+          setIsAssignmentNonSwappable(false);
+          setNonSwappableAssignmentCode("");
+        }
+      }
+    } catch (error) {
+      console.error("Error checking assignment swappability:", error);
+    }
+    
+    // Listen for specific event to detect non-swappable assignments
+    const checkNonSwappableAssignment = (e: CustomEvent) => {
+      if (e.detail && e.detail.code && e.detail.swappable === "No") {
+        console.log("NonSwappable assignment detected via event:", e.detail);
+        setIsAssignmentNonSwappable(true);
+        setNonSwappableAssignmentCode(e.detail.code);
+      }
+    };
+    
+    // Add event listener
+    window.addEventListener('nonSwappableAssignment' as any, checkNonSwappableAssignment as any);
+    
+    return () => {
+      window.removeEventListener('nonSwappableAssignment' as any, checkNonSwappableAssignment as any);
+    };
+  }, [currentResident, currentDate, state.schedule]);
+  
+  useEffect(() => {
+    // Skip if necessary data isn't available - but don't clear arrays if they already have data
+    if (!currentResident || !currentDate) {
+      setSwapsWithPayback([]);
+      setSwapsWithoutPayback([]);
+      return;
+    }
+    
+    // Only process if we have valid swaps and haven't already processed them
+    if (validSwaps.length === 0) {
+      // Only clear if we don't already have categorized swaps
+      if (swapsWithPayback.length === 0 && swapsWithoutPayback.length === 0) {
+        setSwapsWithPayback([]);
+        setSwapsWithoutPayback([]);
+      }
+      return;
+    }
+    
+    const checkPaybackAvailability = async () => {
+      setProcessingPaybackCheck(true);
+      
+      try {
+        const withPayback: PotentialSwap[] = [];
+        const withoutPayback: PotentialSwap[] = [];
+        
+        // Check each swap for payback availability
+        for (const swap of validSwaps) {
+          try {
+            const paybackOptions = findPaybackSwaps(
+              currentResident,
+              swap.residentB,
+              currentDate
+            );
+            
+            if (paybackOptions.length > 0) {
+              withPayback.push(swap);
+            } else {
+              withoutPayback.push(swap);
+            }
+          } catch (error) {
+            console.error(`Error checking payback for ${swap.residentB}:`, error);
+            // If payback check fails, still show the swap without payback
+            withoutPayback.push(swap);
+          }
+        }
+        
+        console.log(`Payback categorization complete: ${withPayback.length} with payback, ${withoutPayback.length} without payback`);
+        
+        setSwapsWithPayback(withPayback);
+        setSwapsWithoutPayback(withoutPayback);
+      } catch (error) {
+        console.error("Error checking payback availability:", error);
+        // If the entire process fails, show all swaps without payback
+        setSwapsWithPayback([]);
+        setSwapsWithoutPayback([...validSwaps]);
+      } finally {
+        setProcessingPaybackCheck(false);
+      }
+    };
+    
+    checkPaybackAvailability();
+  }, [validSwaps.length, currentResident, currentDate, findPaybackSwaps]);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      const showNotSwappableWarning = (!!invalidReason || isAssignmentNonSwappable) && !isSimulationModeActive;
+      const showNoSwapsFound = validSwaps.length === 0 && !showNotSwappableWarning;
+      console.log("DEBUG SwapResults: Display States", {
+        validSwapsCount: validSwaps.length,
+        swapsWithPaybackCount: swapsWithPayback.length,
+        swapsWithoutPaybackCount: swapsWithoutPayback.length,
+        showNoSwapsFound,
+        showNotSwappableWarning,
+        processingPaybackCheck
+      });
+    }
+  }, [validSwaps.length, swapsWithPayback.length, swapsWithoutPayback.length, invalidReason, isAssignmentNonSwappable, isSimulationModeActive, processingPaybackCheck]);
+
+  // Early return AFTER all hooks are declared
   if (!currentResident || !currentDate) {
     return null;
   }
+
+  // Derived state - computed after the early return
+  const showNotSwappableWarning = (!!invalidReason || isAssignmentNonSwappable) && !isSimulationModeActive;
   
-  // Check if we have error states to show
-  const showNoSwapsFound = validSwaps.length === 0 && !invalidReason;
-  const showNotSwappableWarning = !!invalidReason;
+  // Show no swaps found only if we truly have no swaps AND no categorized swaps
+  const hasAnyCategorizedSwaps = swapsWithPayback.length > 0 || swapsWithoutPayback.length > 0;
+  const showNoSwapsFound = validSwaps.length === 0 && !showNotSwappableWarning && !hasAnyCategorizedSwaps;
   
+  // Handler Functions
   const handleFindPaybackOptions = (swap: PotentialSwap) => {
     setIsLoadingPayback(true);
     setSelectedSwap(swap);
@@ -33,9 +209,9 @@ export default function SwapResults() {
     try {
       // Find payback swaps where the current resident can pay back the resident they're swapping with
       const results = findPaybackSwaps(
-        currentResident, // Resident A (who needs to pay back)
-        swap.residentB,  // Resident B (who covered the shift)
-        currentDate      // Original swap date
+        currentResident,
+        swap.residentB,
+        currentDate
       );
       
       setPaybackSwaps(results);
@@ -52,19 +228,12 @@ export default function SwapResults() {
           description: `Found ${results.length} potential payback dates.`
         });
       }
-      
-      // Scroll to payback results container
-      setTimeout(() => {
-        const paybackResultsContainer = document.getElementById('payback-results-container');
-        if (paybackResultsContainer) {
-          paybackResultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
     } catch (error) {
+      console.error("Error finding payback swaps:", error);
       toast({
         variant: "destructive",
-        title: "Error finding payback options",
-        description: "An error occurred while looking for payback options."
+        title: "Error",
+        description: "An error occurred while searching for payback options."
       });
     } finally {
       setIsLoadingPayback(false);
@@ -76,7 +245,7 @@ export default function SwapResults() {
     setPaybackSwaps([]);
   };
   
-  // If we're in payback view, show that instead
+  // Payback detail view - when a specific swap is selected
   if (selectedSwap) {
     return (
       <div>
@@ -85,91 +254,49 @@ export default function SwapResults() {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={handleBackToSwaps} 
-              className="mr-2"
+              onClick={handleBackToSwaps}
+              className="mr-3"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
               Back to Swaps
             </Button>
-            <h2 className="text-lg font-medium text-gray-800">Payback Options</h2>
+            <h2 className="text-lg font-medium text-gray-800">
+              Payback Options for {selectedSwap.residentB}
+            </h2>
           </div>
         </div>
-        
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-5">
-          <div className="flex items-start">
-            <RefreshCw className="h-5 w-5 text-amber-600 mt-0.5 mr-2 flex-shrink-0" />
-            <div>
-              <h3 className="font-medium text-amber-800">Payback Swap Details</h3>
-              <p className="text-sm text-amber-700 mt-1">
-                Looking for dates where <strong>{currentResident}</strong> can pay back <strong>{selectedSwap.residentB}</strong> by 
-                covering a Required shift while on Elective. Original swap date: <strong>{formatDateForDisplay(currentDate)}</strong>
-              </p>
-            </div>
-          </div>
-        </div>
-        
+
         {isLoadingPayback ? (
-          <div className="py-16 flex flex-col items-center justify-center">
-            <Loader2 className="h-8 w-8 text-primary-500 animate-spin mb-4" />
-            <h3 className="text-lg font-medium text-gray-500">Searching for Payback Options</h3>
-            <p className="text-gray-400 text-sm mt-1">
-              This may take a moment as we analyze future dates...
-            </p>
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            <span className="ml-3 text-gray-600">Finding payback options...</span>
           </div>
         ) : paybackSwaps.length > 0 ? (
-          <div id="payback-results-container" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {paybackSwaps.map((payback, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition">
-                <div className="border-b border-gray-200 bg-blue-50 px-4 py-3">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 text-blue-700 mr-2" />
-                      <span className="font-medium text-blue-800">
-                        {format(new Date(payback.date), "MMM d, yyyy")}
-                      </span>
-                    </div>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 mb-4">
+              These are future dates where <strong>{currentResident}</strong> can cover a Required shift for <strong>{selectedSwap.residentB}</strong> while on Elective:
+            </p>
+            {paybackSwaps.map((payback: PaybackSwap, index: number) => (
+              <div key={index} className="border border-gray-200 rounded-lg p-4 bg-green-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Calendar className="h-5 w-5 text-green-600 mr-2" />
+                    <span className="font-medium text-gray-800">
+                      {format(new Date(payback.date), 'EEEE, MMMM d, yyyy')}
+                    </span>
                   </div>
+                  <CheckCircle className="h-5 w-5 text-green-600" />
                 </div>
-                <div className="p-4">
-                  <div className="flex flex-col space-y-3">
-                    <div>
-                      <div className="text-sm text-gray-500 mb-1">Your Elective Assignment:</div>
-                      <div className={`text-sm font-medium p-2 rounded border ${getAssignmentBgColor("Elective")}`}>
-                        <div>{getUserFriendlyLabel(payback.residentAElectiveAssignment.code)}</div>
-                        <span className={`mt-1 inline-block text-xs px-1.5 rounded-full ${getAssignmentTypeBadgeColor("Elective")}`}>
-                          Elective
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-center my-1">
-                      <div className="w-10 h-px bg-gray-200"></div>
-                      <div className="mx-3">
-                        <RefreshCw className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <div className="w-10 h-px bg-gray-200"></div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500 mb-1">{selectedSwap.residentB}'s Required Assignment:</div>
-                      <div className={`text-sm font-medium p-2 rounded border ${getAssignmentBgColor("Required")}`}>
-                        <div>{getUserFriendlyLabel(payback.residentBRequiredAssignment.code)}</div>
-                        <span className={`mt-1 inline-block text-xs px-1.5 rounded-full ${getAssignmentTypeBadgeColor("Required")}`}>
-                          Required
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex justify-end">
-                    <Button size="sm" variant="outline">
-                      Select this Option
-                    </Button>
-                  </div>
+                <div className="mt-2 text-sm text-gray-600">
+                  <div><strong>{currentResident}:</strong> {getUserFriendlyLabel(payback.residentAElectiveAssignment.code)}</div>
+                  <div><strong>{selectedSwap.residentB}:</strong> {getUserFriendlyLabel(payback.residentBRequiredAssignment.code)}</div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div id="payback-results-container" className="py-16 flex flex-col items-center justify-center">
-            <div className="bg-yellow-50 border border-yellow-100 rounded-full p-3 mb-4">
+          <div className="text-center py-12">
+            <div className="flex justify-center mb-4">
               <Clock className="h-6 w-6 text-yellow-500" />
             </div>
             <h3 className="text-lg font-medium text-gray-500">No Future Payback Options Found</h3>
@@ -181,12 +308,36 @@ export default function SwapResults() {
       </div>
     );
   }
-  
-  // Otherwise, show the regular swap results
+
+  // Regular swap results view
   return (
     <>
+      {/* Full-width Simulation Mode Banner - single place for simulation mode indication */}
+      {isSimulationModeActive && (
+        <div className="mb-4 p-4 bg-amber-50 border border-amber-300 rounded-lg flex items-start">
+          <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0 mr-3" />
+          <div>
+            <h3 className="text-sm font-medium text-amber-800">Simulation Mode Active</h3>
+            <p className="text-xs text-amber-700 mt-1">
+              You are viewing hypothetical swaps that may not be allowed under standard program rules.
+              {isAssignmentNonSwappable && (
+                <span className="block mt-1">
+                  <strong>Note:</strong> The assignment "{nonSwappableAssignmentCode}" is normally non-swappable, 
+                  but swaps are being shown for planning purposes.
+                </span>
+              )}
+              <span className="block mt-1 font-semibold">
+                These hypothetical swaps are for planning purposes only and cannot be executed in practice.
+              </span>
+            </p>
+          </div>
+        </div>
+      )}
+      
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-lg font-medium text-gray-800">Swap Results</h2>
+        <div className="flex items-center">
+          <h2 className="text-lg font-medium text-gray-800">Swap Results</h2>
+        </div>
         {validSwaps.length > 0 && (
           <div className="flex space-x-2">
             <div className="text-sm text-gray-500 flex items-center" id="total-results-counter">
@@ -197,97 +348,207 @@ export default function SwapResults() {
       </div>
       
       <div id="swap-results-container">
-        {/* Valid Swaps List */}
-        {validSwaps.length > 0 && (
-          <div id="valid-swaps-list" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {validSwaps.map((swap, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition">
-                <div className="border-b border-gray-200 bg-gray-50 px-4 py-3">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <span className="font-medium">{swap.residentB}</span>
-                      <span className="ml-1.5 text-xs bg-primary-100 text-primary-800 px-1.5 rounded-full">
-                        PGY{swap.pgyB}
-                      </span>
+        {/* Processing state */}
+        {processingPaybackCheck && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-lg flex items-center">
+            <Loader2 className="h-5 w-5 text-blue-500 animate-spin mr-3" />
+            <span className="text-sm text-blue-700">Processing swap options...</span>
+          </div>
+        )}
+      
+        {/* Show all swaps if categorization is still processing or failed */}
+        {!processingPaybackCheck && validSwaps.length > 0 && swapsWithPayback.length === 0 && swapsWithoutPayback.length === 0 && (
+          <>
+            <div className="mb-6">
+              <h3 className="text-base font-medium text-gray-700 mb-3">All Valid Swaps</h3>
+              <div id="valid-swaps-list" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {validSwaps.map((swap, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition">
+                    <div className="border-b border-gray-200 bg-gray-50 px-4 py-3">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <span className="font-medium">{swap.residentB}</span>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          PGY-{swap.pgyB}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="px-4 py-3">
+                      <div className="space-y-2 text-sm">
+                        <div>
+                          <span className="text-gray-600">You give:</span> 
+                          <span className="ml-2 font-medium">{getUserFriendlyLabel(swap.assignmentA.code)}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">You get:</span> 
+                          <span className="ml-2 font-medium">{getUserFriendlyLabel(swap.assignmentB.code)}</span>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex justify-between items-center">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleFindPaybackOptions(swap)}
+                          className="text-xs"
+                        >
+                          <Calendar className="h-3 w-3 mr-1" />
+                          Find Payback
+                        </Button>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Categorized swaps display - only show when categorization is complete */}
+        {!processingPaybackCheck && (swapsWithPayback.length > 0 || swapsWithoutPayback.length > 0) && (
+          <>
+            {/* Swaps with payback options */}
+            {swapsWithPayback.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-base font-medium text-green-700 mb-3 flex items-center">
+                  <CheckCircle className="h-5 w-5 mr-2" />
+                  Swaps with Future Payback Options ({swapsWithPayback.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {swapsWithPayback.map((swap, index) => (
+                    <div key={index} className="border border-green-200 rounded-lg overflow-hidden hover:shadow-md transition bg-green-50">
+                      <div className="border-b border-green-200 bg-green-100 px-4 py-3">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <span className="font-medium">{swap.residentB}</span>
+                          </div>
+                          <div className="text-xs text-green-600">
+                            PGY-{swap.pgyB}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="px-4 py-3">
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <span className="text-gray-600">You give:</span> 
+                            <span className="ml-2 font-medium">{getUserFriendlyLabel(swap.assignmentA.code)}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">You get:</span> 
+                            <span className="ml-2 font-medium">{getUserFriendlyLabel(swap.assignmentB.code)}</span>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex justify-between items-center">
+                          <Button
+                            size="sm"
+                            onClick={() => handleFindPaybackOptions(swap)}
+                            className="text-xs bg-green-600 hover:bg-green-700"
+                          >
+                            <Calendar className="h-3 w-3 mr-1" />
+                            View Payback
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="p-4">
-                  <div className="flex flex-col space-y-3">
-                    <div>
-                      <div className="text-sm text-gray-500 mb-1">Current Assignment:</div>
-                      <div className={`text-sm font-medium p-2 rounded border ${getAssignmentBgColor(swap.assignmentB.type)}`}>
-                        <div>{getUserFriendlyLabel(swap.assignmentB.code)}</div>
-                        <span className={`mt-1 inline-block text-xs px-1.5 rounded-full ${getAssignmentTypeBadgeColor(swap.assignmentB.type)}`}>
-                          {swap.assignmentB.type}
-                        </span>
+              </div>
+            )}
+
+            {/* Swaps without payback options */}
+            {swapsWithoutPayback.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-base font-medium text-yellow-700 mb-3 flex items-center">
+                  <Clock className="h-5 w-5 mr-2" />
+                  Swaps without Future Payback Options ({swapsWithoutPayback.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {swapsWithoutPayback.map((swap, index) => (
+                    <div key={index} className="border border-yellow-200 rounded-lg overflow-hidden hover:shadow-md transition bg-yellow-50">
+                      <div className="border-b border-yellow-200 bg-yellow-100 px-4 py-3">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <span className="font-medium">{swap.residentB}</span>
+                          </div>
+                          <div className="text-xs text-yellow-600">
+                            PGY-{swap.pgyB}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="px-4 py-3">
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <span className="text-gray-600">You give:</span> 
+                            <span className="ml-2 font-medium">{getUserFriendlyLabel(swap.assignmentA.code)}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">You get:</span> 
+                            <span className="ml-2 font-medium">{getUserFriendlyLabel(swap.assignmentB.code)}</span>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex justify-between items-center">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleFindPaybackOptions(swap)}
+                            className="text-xs border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+                          >
+                            <Calendar className="h-3 w-3 mr-1" />
+                            Check Payback
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-center my-1">
-                      <div className="w-10 h-px bg-gray-200"></div>
-                      <div className="mx-3">
-                        <RefreshCw className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <div className="w-10 h-px bg-gray-200"></div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500 mb-1">Your Assignment:</div>
-                      <div className={`text-sm font-medium p-2 rounded border ${getAssignmentBgColor(swap.assignmentA.type)}`}>
-                        <div>{getUserFriendlyLabel(swap.assignmentA.code)}</div>
-                        <span className={`mt-1 inline-block text-xs px-1.5 rounded-full ${getAssignmentTypeBadgeColor(swap.assignmentA.type)}`}>
-                          {swap.assignmentA.type}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <div className="text-xs text-gray-500 mb-1">Validation</div>
-                    <div className="flex space-x-2 mb-3">
-                      <span className="text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded">
-                        PGY Compatible
-                      </span>
-                      <span className="text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded">
-                        7-Day Rule OK
-                      </span>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => handleFindPaybackOptions(swap)}
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* No valid swaps found */}
+        {showNoSwapsFound && (
+          <div className="text-center py-12">
+            <div className="flex justify-center mb-4">
+              <RefreshCw className="h-6 w-6 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-500">No Valid Swaps Found</h3>
+            <p className="text-gray-400 text-sm mt-1">
+              No residents are available to swap with {currentResident} on {format(parseISO(currentDate), 'EEEE, MMMM d, yyyy')}.
+            </p>
+          </div>
+        )}
+
+        {/* Warning for non-swappable assignments */}
+        {showNotSwappableWarning && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-start">
+              <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0 mr-3" />
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-red-800">Assignment Not Swappable</h3>
+                <div className="mt-1 text-sm text-red-700">
+                  {invalidReason && <p>{invalidReason}</p>}
+                  {isAssignmentNonSwappable && (
+                    <p>
+                      The assignment "{nonSwappableAssignmentCode}" for {currentResident} on {format(parseISO(currentDate), 'EEEE, MMMM d, yyyy')} is marked as non-swappable.
+                    </p>
+                  )}
+                  <div className="mt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={toggleSimulationMode}
+                      className="text-red-700 border-red-300 hover:bg-red-100"
                     >
-                      Find Payback Options
+                      Enable Simulation Mode
                     </Button>
+                    <span className="ml-2 text-xs text-red-600">
+                      (View hypothetical swaps for planning purposes)
+                    </span>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-        
-        {/* Empty State */}
-        {showNoSwapsFound && (
-          <div id="no-swaps-found" className="py-16 flex flex-col items-center justify-center">
-            <div className="bg-yellow-50 border border-yellow-100 rounded-full p-3 mb-4">
-              <Clock className="h-6 w-6 text-yellow-500" />
             </div>
-            <h3 className="text-lg font-medium text-gray-500">No Valid Swaps Found</h3>
-            <p className="text-gray-400 text-sm mt-1 max-w-md text-center">
-              No residents with compatible assignments for this date. Try selecting a different date or resident.
-            </p>
-          </div>
-        )}
-        
-        {/* Not Swappable Assignment Warning */}
-        {showNotSwappableWarning && (
-          <div id="not-swappable-warning" className="py-16 flex flex-col items-center justify-center">
-            <div className="bg-red-50 border border-red-100 rounded-full p-3 mb-4">
-              <Clock className="h-6 w-6 text-red-500" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-500">Assignment Not Swappable</h3>
-            <p className="text-gray-400 text-sm mt-1 max-w-md text-center">
-              {invalidReason}
-            </p>
           </div>
         )}
       </div>

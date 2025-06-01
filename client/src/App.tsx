@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter, useLocation, useRoute } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -7,12 +7,12 @@ import { ScheduleProvider } from "./context/ScheduleContext";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Footer from "@/components/Footer";
-import { useEffect, useState } from "react";
-import { BASE_PATH, getGitHubPagesPath, isGitHubPagesEnvironment } from "./lib/gitHubPagesConfig";
+import { useEffect } from "react";
+import { BASE_PATH, getGitHubPagesPath } from "./lib/gitHubPagesConfig";
 
 // Create a custom hook for base path
 const useBasePath = () => {
-  // This will return the base path ('/Schedule-Swap' for GitHub Pages or '' for local development)
+  // This will return the base path ('/swap' for GitHub Pages or '' for local development)
   return BASE_PATH;
 };
 
@@ -28,18 +28,11 @@ const useRedirectFromSessionStorage = () => {
       // Remove the value from sessionStorage to prevent future redirects
       sessionStorage.removeItem('redirect-path');
       
-      // Extract the path without the base path
-      const cleanPath = redirectPath.replace(BASE_PATH, '');
-      console.log('Clean path after removing base path:', cleanPath);
-      
       // Only redirect if we're not already on the target path
-      if (location !== cleanPath) {
-        // If the redirectPath is not empty or "/", update the location
-        if (cleanPath && cleanPath !== '/') {
-          setLocation(cleanPath);
-        } else {
-          // Default to home page
-          setLocation('/');
+      if (location !== redirectPath) {
+        // If the redirectPath is not "/", update the location
+        if (redirectPath !== '/') {
+          setLocation(redirectPath);
         }
       }
     }
@@ -48,48 +41,13 @@ const useRedirectFromSessionStorage = () => {
   return null;
 };
 
-// Custom wrapper for Home component to handle GitHub Pages /swap/ path
-const HomeWrapper = () => {
-  // Check if we're on a GitHub Pages site and in the /swap/ directory
-  const isGitHubPages = isGitHubPagesEnvironment();
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-  const inSwapDir = pathname.includes('/swap/');
-  
-  // If we're in the swap directory on GitHub Pages, we should show the home page
-  const [isSwapRoute] = useRoute('/swap/*');
-  const [isRootRoute] = useRoute('/');
-  
-  // Debug paths
-  console.log('HomeWrapper - Path check:', { 
-    isGitHubPages, 
-    pathname, 
-    inSwapDir, 
-    isSwapRoute, 
-    isRootRoute 
-  });
-  
-  // If we're at root or in the swap directory (on GitHub Pages), show the Home component
-  if (isRootRoute || (isGitHubPages && (inSwapDir || isSwapRoute))) {
-    console.log('Rendering Home component');
-    return <Home />;
-  }
-  
-  console.log('Not rendering Home - unknown route');
-  return null;
-};
-
 function Router() {
   // This helps with GitHub Pages SPA routing
   useRedirectFromSessionStorage();
   
-  // Determine if we should check for the /swap/ route
-  const isGitHubPages = isGitHubPagesEnvironment();
-  
   return (
     <Switch>
-      <Route path="/" component={HomeWrapper} />
-      {isGitHubPages && <Route path="/swap" component={HomeWrapper} />}
-      {isGitHubPages && <Route path="/swap/" component={HomeWrapper} />}
+      <Route path="/" component={Home} />
       {/* If we have additional routes, they will be added here */}
       <Route component={NotFound} />
     </Switch>
@@ -99,7 +57,7 @@ function Router() {
 function App() {
   const basePath = useBasePath();
   
-  // Handle GitHub Pages routing on initial load
+  // Handle GitHub Pages redirect on initial load
   useEffect(() => {
     // Check for a redirect path from the 404.html page
     const redirectPath = sessionStorage.getItem('redirect-path');
@@ -107,16 +65,8 @@ function App() {
       console.log('Initial load with redirect path:', redirectPath);
     }
     
-    // Log the environment and current path
+    // Log the environment
     console.log('App initialized with base path:', basePath);
-    console.log('Current pathname:', window.location.pathname);
-    
-    // For debugging GitHub Pages URLs
-    if (window.location.hostname.endsWith('github.io')) {
-      console.log('GitHub Pages detected');
-      console.log('Path segments:', window.location.pathname.split('/'));
-      console.log('Path contains /swap/:', window.location.pathname.includes('/swap/'));
-    }
   }, [basePath]);
   
   return (

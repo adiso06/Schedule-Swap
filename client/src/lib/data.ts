@@ -39,172 +39,81 @@ export const residentsData: { [name: string]: PGYLevel } = {
 };
 
 /**
- * Defines the rules for classifying and determining swappability of assignments.
- * Keys are patterns (often prefixes) used to match assignment codes from the schedule.
- * The matching logic should prioritize longer, more specific matches first.
+ * Assignment classification rules for determining type and swappability
  */
 export const assignmentClassification: AssignmentClassification = {
-  // --- Explicitly Non-Swappable (Rule C2) ---
-  "NSLIJ:DM:IM:Vacation": {
-    type: "Status",
-    swappable: "Yes", // Changed to Yes to allow vacation swaps
-    notes: "Can be swapped with other eligible assignments. Not a working day.",
-  },
-  "NSLIJ:DM:IM:LOA-Medical": {
-    type: "Status",
-    swappable: "No",
-    notes: "Cannot be swapped (C2). Not a working day.",
-  },
-  "NSLIJ:DM:IM:Clinic-": {
-    // Prefix Match
-    type: "Clinic", // Corrected Type
-    swappable: "No",
-    notes: "Cannot be swapped (C2). Is a working day.",
-  },
-
-  // --- Status Assignments ---
-  OFF: {
-    type: "Status",
-    swappable: "Yes", // Swappable per C6, subject to C7 compatibility
-    notes: "Can be swapped with Elective/Status per C7. Not a working day.",
-  },
-  "NSLIJ:DM:IM:Board-Prep": {
-    type: "Status",
-    swappable: "Conditional", // Swappable per C6, subject to C5 and C7
-    pgyRules: "Both residents must be PGY3",
-    notes:
-      "Can swap with Elective/Status per C7. Not a working day. Requires PGY3.",
-  },
-
-  // --- Required Assignments (Conditionally Swappable with Electives - Rule C7) ---
-  "NSLIJ:DM:PULM:MICU-": {
-    // Prefix Match
-    type: "Required",
-    swappable: "Conditional",
-    notes:
-      "Can only swap with Elective (C7). **Confirm Type.** Assumed working day.",
-  },
-  "NSLIJ:DM:IM:Team-": {
-    // Prefix Match
-    type: "Required",
-    swappable: "Conditional",
-    notes: "Can only swap with Elective (C7). Is a working day.",
-  },
-  "NSLIJ:DM:IM:MAR-": {
-    // Prefix Match
-    type: "Required",
-    swappable: "Conditional",
-    pgyRules: "Recipient must be PGY3.", // Specific PGY rule (C4)
-    notes:
-      "Can only swap with Elective (C7). Is a working day. Requires PGY3 recipient.",
-  },
-  "DN:Neuro": {
-    // Prefix Match (covers DN:Neuro and DN:Neuro-Consult)
-    type: "Required",
-    swappable: "Conditional", // Corrected Swappable status
-    notes:
-      "Can only swap with Elective (C7). **Confirm Type.** Assumed working day.",
-  },
-  "NSLIJ:DM:IM:Chief": {
-    type: "Required", // Corrected Type
-    swappable: "Conditional", // Corrected Swappable status
-    notes:
-      "Can only swap with Elective (C7). **Confirm Type.** Assumed working day.",
-  },
-
-  // --- Elective Assignments (Generally Swappable - Rule C7) ---
-  "El-": {
-    // Prefix Match (e.g., El-Research)
-    type: "Elective",
-    swappable: "Yes",
-    notes:
-      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
-  },
-  "EI-": {
-    // Prefix Match (e.g., EI-Pulm-LIJ)
-    type: "Elective",
-    swappable: "Yes",
-    notes:
-      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
-  },
-  "CARD:El-": {
-    // Prefix Match
-    type: "Elective",
-    swappable: "Yes",
-    notes:
-      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
-  },
-  "CARD:CCU-": {
-    // Prefix Match
-    type: "Elective",
-    swappable: "Yes",
-    notes:
-      "Can swap with Elective/Required/Status per C7. **Confirm Sat/Sun working.**",
-  },
-  "NSLIJ:DM:IM:Uganda": {
-    type: "Elective", // Assumed
-    swappable: "Yes", // Assumed
-    notes:
-      "**Confirm Type.** Can swap with Elective/Required/Status per C7. Working (M-F).",
-  },
-  "NSLIJ:DM:GERI:El-Geri": {
-    type: "Elective",
-    swappable: "Yes",
-    notes:
-      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
-  },
-  "NSLIJ:DM:GI:El-GI-": {
-    // Prefix Match
-    type: "Elective",
-    swappable: "Yes",
-    notes:
-      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
-  },
-  "NSLIJ:DM:HO:El-HemOnc-NS": {
-    type: "Elective",
-    swappable: "Yes",
-    notes:
-      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
-  },
-  "NSLIJ:DM:ID:El-ID-NS": {
-    type: "Elective",
-    swappable: "Yes",
-    notes:
-      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
-  },
-  "NSLIJ:DM:ID:El-ID-LIJ": {
-    type: "Elective",
-    swappable: "Yes",
-    notes:
-      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
-  },
-  "NSLIJ:DM:IM:El-Procedure-LIJ": {
-    type: "Elective",
-    swappable: "Yes",
-    notes:
-      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
-  },
-  "NSLIJ:DM:IM:El-Pri-Care": {
-    type: "Elective",
-    swappable: "Yes",
-    notes:
-      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
-  },
-  "NSLIJ:DM:IM:Valley-Stream": {
-    // Prefix Match
-    type: "Elective", // Assumed
-    swappable: "Yes", // Assumed
-    notes:
-      "**Confirm Type.** Can swap with Elective/Required/Status per C7. Working (M-F).",
-  },
-  "NSLIJ:DM:PULM:El-Pulm-NS": {
-    type: "Elective",
-    swappable: "Yes",
-    notes:
-      "Can swap with Elective/Required/Status per C7. Working day (Mon-Fri).",
-  },
-  // Add entries for any other unique codes encountered ('TBD' type initially if unsure)
+  // Basic status assignments
+  "OFF": { type: "Status", swappable: "Yes", notes: "Regular day off" },
+  "0": { type: "Status", swappable: "Yes", notes: "Day off (alternative notation)" },
+  
+  // Leave and vacation
+  "NSLIJ:DM:IM:Vacation": { type: "Vacation", swappable: "Yes", notes: "Vacation time" },
+  "NSLIJ:DM:IM:LOA-Medical": { type: "Admin", swappable: "No", notes: "Medical leave of absence" },
+  "Paternity": { type: "Admin", swappable: "No", notes: "Paternity leave" },
+  
+  // Administrative assignments
+  "NSLIJ:DM:IM:Chief": { type: "Admin", swappable: "No", notes: "Chief duty" },
+  "NSLIJ:DM:IM:Advocacy": { type: "Admin", swappable: "No", notes: "Advocacy work" },
+  "NSLIJ:DM:IM:Board-Prep": { type: "Elective", swappable: "Yes", pgyRules: "PGY3 only", notes: "Board preparation" },
+  
+  // Required rotations
+  "NSLIJ:DM:IM:Team-": { type: "Required", swappable: "Yes", notes: "Internal medicine team rotation" },
+  "NSLIJ:DM:IM:MAR-": { type: "Required", swappable: "Yes", pgyRules: "PGY3 only", notes: "MAR duty rotation" },
+  "NSLIJ:DM:IM:NF-": { type: "Required", swappable: "Yes", notes: "Night float" },
+  "NSLIJ:DM:IM:Night-Ad-": { type: "Required", swappable: "Yes", notes: "Night admin" },
+  
+  // MICU assignments
+  "NSLIJ:DM:PULM:MICU-": { type: "Required", swappable: "Yes", notes: "Medical ICU rotation" },
+  "MICU-": { type: "Required", swappable: "Yes", notes: "Medical ICU rotation (short form)" },
+  
+  // Clinic assignments (marked as non-swappable by default but type allows some swaps)
+  "NSLIJ:DM:IM:Clinic-": { type: "Clinic", swappable: "No", notes: "Clinic assignment" },
+  
+  // Elective assignments - general patterns first, then specific ones
+  "El-": { type: "Elective", swappable: "Yes", notes: "General elective" },
+  "EI-": { type: "Elective", swappable: "Yes", notes: "Elective internal medicine" },
+  
+  // Specific electives
+  "NSLIJ:DM:PULM:El-US-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ US Elective" },
+  "NSLIJ:DM:NEPH:El-Renal-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ Nephro Elective" },
+  "NSLIJ:DM:ENDO:El-Endo-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ Endo Elective" },
+  "NSLIJ:DM:PULM:El-US-NS": { type: "Elective", swappable: "Yes", notes: "NS US Elective" },
+  "NSLIJ:DM:PULM:El-Sleep-NS": { type: "Elective", swappable: "Yes", notes: "NS Sleep Elective" },
+  "NSLIJ:DM:PULM:El-Pulm-NS": { type: "Elective", swappable: "Yes", notes: "NS Pulm Elective" },
+  "NSLIJ:DM:PULM:El-Pulm-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ Pulm Elective" },
+  "NSLIJ:DM:ID:El-ID-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ ID Elective" },
+  "NSLIJ:DM:ID:El-ID-NS": { type: "Elective", swappable: "Yes", notes: "NS ID Elective" },
+  "NSLIJ:DM:GI:El-Hep-NS": { type: "Elective", swappable: "Yes", notes: "NS Hepatology Elective" },
+  "NSLIJ:DM:GI:El-Hep-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ Hepatology Elective" },
+  "NSLIJ:DM:GI:El-GI-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ GI Elective" },
+  "NSLIJ:DM:GI:El-GI-NS": { type: "Elective", swappable: "Yes", notes: "NS GI Elective" },
+  "NSLIJ:DM:HO:El-HemOnc-NS": { type: "Elective", swappable: "Yes", notes: "NS Hem/Onc Elective" },
+  "NSLIJ:DM:IM:El-Procedure-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ Procedure Elective" },
+  "NSLIJ:DM:IM:El-Pri-Care": { type: "Elective", swappable: "Yes", notes: "Primary Care Elective" },
+  "NSLIJ:DM:IM:El-Rheum-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ Rheum Elective" },
+  "NSLIJ:DM:GERI:El-Geri": { type: "Elective", swappable: "Yes", notes: "Geri Elective" },
+  "NSLIJ:DM:PALL:El-Pall-NSUH": { type: "Elective", swappable: "Yes", notes: "NSUH Palliative Care Elective" },
+  "NSLIJ:DM:IM:Uganda": { type: "Elective", swappable: "Yes", notes: "Uganda Elective" },
+  
+  // Cardiology
+  "CARD:El-": { type: "Elective", swappable: "Yes", notes: "Cardiology elective" },
+  "CARD:CCU-": { type: "Required", swappable: "Yes", notes: "Coronary care unit" },
+  
+  // Emergency department
+  "NSLIJ:DE:ER-": { type: "Required", swappable: "Yes", notes: "Emergency department" },
+  "ER:ER-": { type: "Required", swappable: "Yes", notes: "Emergency department (short form)" },
+  
+  // Subspecialty required rotations
+  "DN:Neuro": { type: "Required", swappable: "Yes", notes: "Neurology rotation" },
+  "DN:Neuro-Consult": { type: "Required", swappable: "Yes", notes: "Neurology consult service" },
+  "ENT": { type: "Required", swappable: "Yes", notes: "ENT rotation" },
+  
+  // Research and other special assignments
+  "El-Research": { type: "Elective", swappable: "Yes", notes: "Research elective" },
+  "DPEDS:AI:El-AI": { type: "Elective", swappable: "Yes", notes: "AI Elective" }
 };
+
+
 
 /**
  * Default schedule data in JSON format for loading as the baseline schedule.

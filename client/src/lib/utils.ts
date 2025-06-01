@@ -38,6 +38,11 @@ export function isWorkingDay(assignment: Assignment): boolean {
     return false;
   }
 
+  // Clinic assignments on weekends are not working days (clinics don't operate on weekends)
+  if (assignment.isWeekend && assignment.code.startsWith("NSLIJ:DM:IM:Clinic-")) {
+    return false;
+  }
+
   // Weekend check for electives - only CCU potentially works on weekends
   if (
     assignment.isWeekend && 

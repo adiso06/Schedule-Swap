@@ -67,7 +67,16 @@ export function parseExcelData(data: string): {
         if (assignmentCode && assignmentCode !== "OFF") {
           // Use the existing getAssignmentInfo function to classify assignments
           const isWeekendDay = checkIsWeekend(new Date(dates[j]));
+          
+          // Get assignment info but handle clinic weekends specially
           schedule[residentName][dates[j]] = getAssignmentInfo(assignmentCode, isWeekendDay);
+          
+          // For clinic assignments on weekends, override swappable and working status
+          // but keep the original clinic code for display
+          if (isWeekendDay && assignmentCode.startsWith("NSLIJ:DM:IM:Clinic-")) {
+            schedule[residentName][dates[j]].swappable = SwappableStatus.No;
+            schedule[residentName][dates[j]].isWorkingDay = false;
+          }
         } else if (assignmentCode === "OFF") {
           // Handle OFF days explicitly
           schedule[residentName][dates[j]] = {

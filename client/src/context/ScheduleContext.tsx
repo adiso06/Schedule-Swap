@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, ReactNode, useContext, useEffect } from "react";
+import React, { createContext, useReducer, ReactNode, useContext, useEffect, useCallback } from "react";
 import { 
   ScheduleState, 
   PotentialSwap, 
@@ -39,10 +39,13 @@ type ScheduleContextType = {
   state: ScheduleState;
   parseSchedule: (input: string, isExcelFormat?: boolean) => void;
   setPgyLevels: (pgyLevels: { [name: string]: PGYLevel }) => void;
-  setCurrentResident: (residentName: string | null) => void;
-  setCurrentDate: (date: string | null) => void;
+  setCurrentResident: (residentName: string | null, preserveSwaps?: boolean) => void;
+  setCurrentDate: (date: string | null, preserveSwaps?: boolean) => void;
   findValidSwaps: (residentName: string, date: string) => void;
+  toggleSimulationMode: () => void;
   findPaybackSwaps: (residentAName: string, residentBName: string, originalSwapDate: string) => PaybackSwap[];
+  setPaybackContext: (residentA: string, residentB: string) => void;
+  clearPaybackContext: () => void;
   reset: () => void;
   // Persistence functions
   saveCurrentSchedule: (name: string) => SavedSchedule;
@@ -70,7 +73,12 @@ const initialState: ScheduleState = {
   currentResident: null,
   currentDate: null,
   validSwaps: [],
-  invalidReason: null
+  invalidReason: null,
+  isSimulationModeActive: false,
+  // Payback context
+  currentPaybackResidentA: null,
+  currentPaybackResidentB: null,
+  isPaybackModeActive: false
 };
 
 // Action types
@@ -90,9 +98,12 @@ type Action =
       residents?: { [name: string]: { name: string; pgyLevel: PGYLevel } }
     } }
   | { type: "SET_PGY_LEVELS"; payload: { pgyLevels: { [name: string]: PGYLevel } } }
-  | { type: "SET_CURRENT_RESIDENT"; payload: { residentName: string | null } }
-  | { type: "SET_CURRENT_DATE"; payload: { date: string | null } }
+  | { type: "SET_CURRENT_RESIDENT"; payload: { residentName: string | null, preserveSwaps?: boolean } }
+  | { type: "SET_CURRENT_DATE"; payload: { date: string | null, preserveSwaps?: boolean } }
   | { type: "SET_VALID_SWAPS"; payload: { validSwaps: PotentialSwap[], invalidReason: string | null } }
+  | { type: "TOGGLE_SIMULATION_MODE" }
+  | { type: "SET_PAYBACK_CONTEXT"; payload: { residentA: string, residentB: string } }
+  | { type: "CLEAR_PAYBACK_CONTEXT" }
   | { type: "LOAD_SAVED_SCHEDULE"; payload: { 
       schedule: { [residentName: string]: { [date: string]: Assignment } }, 
       metadata: { 
@@ -124,13 +135,17 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
             currentResident: null,
             currentDate: null,
             validSwaps: [],
-            invalidReason: null
+            invalidReason: null,
+            // Clear payback context when new schedule is loaded
+            currentPaybackResidentA: null,
+            currentPaybackResidentB: null,
+            isPaybackModeActive: false
           };
         }
-        
+
         // Otherwise parse the HTML content
         const { schedule, metadata } = parseScheduleHTML(action.payload.scheduleHtml);
-        
+
         // Preprocess schedule to calculate isWorkingDay
         Object.keys(schedule).forEach(residentName => {
           Object.keys(schedule[residentName]).forEach(date => {
@@ -138,24 +153,24 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
             assignment.isWorkingDay = isWorkingDay(assignment);
           });
         });
-        
+
         // Infer PGY levels from resident names if possible
         const inferredPgyLevels = inferPGYLevels(metadata.residents);
-        
+
         // Default to demo PGY data for testing
         const pgyLevels = { ...demoPGYData, ...inferredPgyLevels };
-        
+
         // Create resident objects with PGY levels
         const residents = metadata.residents.reduce((acc, name) => {
           if (!name || name === "<>" || name === " ") return acc;
-          
+
           acc[name] = {
             name,
             pgyLevel: (pgyLevels as Record<string, PGYLevel>)[name] || 2 // Default to PGY2 if not available
           };
           return acc;
         }, {} as { [name: string]: { name: string; pgyLevel: PGYLevel } });
-        
+
         return {
           ...state,
           residents,
@@ -164,14 +179,18 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
           currentResident: null,
           currentDate: null,
           validSwaps: [],
-          invalidReason: null
+          invalidReason: null,
+          // Clear payback context when new schedule is loaded
+          currentPaybackResidentA: null,
+          currentPaybackResidentB: null,
+          isPaybackModeActive: false
         };
       } catch (error) {
         console.error("Error parsing schedule:", error);
         throw error;
       }
     }
-    
+
     case "LOAD_SAVED_SCHEDULE": {
       return {
         ...state,
@@ -181,10 +200,14 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
         currentResident: null,
         currentDate: null,
         validSwaps: [],
-        invalidReason: null
+        invalidReason: null,
+        // Clear payback context when loading saved schedule
+        currentPaybackResidentA: null,
+        currentPaybackResidentB: null,
+        isPaybackModeActive: false
       };
     }
-    
+
     case "SET_PGY_LEVELS":
       // Update PGY levels for residents
       return {
@@ -197,33 +220,59 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
           return acc;
         }, {} as { [name: string]: { name: string; pgyLevel: PGYLevel } })
       };
-    
+
     case "SET_CURRENT_RESIDENT":
       return {
         ...state,
         currentResident: action.payload.residentName,
-        validSwaps: [], // Clear previous results
-        invalidReason: null
+        // Only clear validSwaps if not preserving them
+        validSwaps: action.payload.preserveSwaps ? state.validSwaps : [],
+        invalidReason: action.payload.preserveSwaps ? state.invalidReason : null
       };
-    
+
     case "SET_CURRENT_DATE":
       return {
         ...state,
         currentDate: action.payload.date,
-        validSwaps: [], // Clear previous results
-        invalidReason: null
+        // Only clear validSwaps if not preserving them
+        validSwaps: action.payload.preserveSwaps ? state.validSwaps : [],
+        invalidReason: action.payload.preserveSwaps ? state.invalidReason : null
       };
-    
+
     case "SET_VALID_SWAPS":
       return {
         ...state,
         validSwaps: action.payload.validSwaps,
         invalidReason: action.payload.invalidReason
       };
-    
+
+    case "TOGGLE_SIMULATION_MODE":
+      return {
+        ...state,
+        isSimulationModeActive: !state.isSimulationModeActive,
+        validSwaps: [], // Clear swaps when mode changes
+        invalidReason: null // Clear reason when mode changes
+      };
+
+    case "SET_PAYBACK_CONTEXT":
+      return {
+        ...state,
+        currentPaybackResidentA: action.payload.residentA,
+        currentPaybackResidentB: action.payload.residentB,
+        isPaybackModeActive: true
+      };
+
+    case "CLEAR_PAYBACK_CONTEXT":
+      return {
+        ...state,
+        currentPaybackResidentA: null,
+        currentPaybackResidentB: null,
+        isPaybackModeActive: false
+      };
+
     case "RESET":
       return initialState;
-    
+
     default:
       return state;
   }
@@ -232,33 +281,245 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
 // Provider component
 export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(scheduleReducer, initialState);
-  
+
+  // Helper functions for validation
+
+  // C3: PGY Level Compatibility (optimized, no logging)
+  const isPgyCompatible = useCallback((pgyA: PGYLevel, pgyB: PGYLevel): boolean => {
+    // PGY1 can only swap with PGY1
+    if (pgyA === 1 || pgyB === 1) {
+      return pgyA === 1 && pgyB === 1;
+    }
+
+    // PGY2 and PGY3 can swap with each other and themselves
+    if (pgyA === 2 || pgyA === 3) {
+      return pgyB === 2 || pgyB === 3;
+    }
+
+    // For any other PGY levels, they can swap with the same level
+    return pgyA === pgyB;
+  }, []);
+
+  // C7: Assignment Type Compatibility (optimized, no logging)
+  const isAssignmentTypeCompatible = useCallback((typeA: string, typeB: string, isSimulationMode?: boolean): boolean => {
+    // Define compatible assignment types based on medical residency rules
+    const compatibilityMatrix: { [key: string]: string[] } = {
+      "Required": ["Elective"], // Required can swap with Elective only
+      "Elective": ["Required", "Elective"], // Elective can swap with Required and Elective
+      "Status": ["Elective"], // Status (OFF, Board-Prep) can swap with Elective only
+      "Clinic": [], // Clinic assignments cannot be swapped in normal mode
+      "Admin": [], // Admin assignments cannot be swapped
+      "TBD": [], // TBD assignments cannot be swapped
+      "Vacation": [] // Vacation assignments cannot be swapped
+    };
+
+    // In simulation mode, allow clinic assignments to swap with Required and Elective
+    if (isSimulationMode) {
+      if (typeA === "Clinic") {
+        return ["Required", "Elective"].includes(typeB);
+      }
+      if (typeB === "Clinic") {
+        return ["Required", "Elective"].includes(typeA);
+      }
+    }
+
+    const compatibleTypes = compatibilityMatrix[typeA] || [];
+    return compatibleTypes.includes(typeB);
+  }, []);
+
+  // C4: MAR Shift Restriction
+  const isMarRestrictionValid = useCallback((
+    assignmentA: Assignment,
+    assignmentB: Assignment,
+    pgyA: PGYLevel,
+    pgyB: PGYLevel
+  ): boolean => {
+    const isAssignmentAMar = assignmentA.code.includes("MAR-");
+    const isAssignmentBMar = assignmentB.code.includes("MAR-");
+
+    // If B is MAR, A must be PGY3 to take it
+    if (isAssignmentBMar && pgyA !== 3) {
+      return false;
+    }
+
+    // If A is MAR, B must be PGY3 to take it
+    if (isAssignmentAMar && pgyB !== 3) {
+      return false;
+    }
+
+    return true;
+  }, []);
+
+  // C5: Board Prep Restriction
+  const isBoardPrepRestrictionValid = useCallback((
+    assignmentA: Assignment,
+    assignmentB: Assignment,
+    pgyA: PGYLevel,
+    pgyB: PGYLevel
+  ): boolean => {
+    const isAssignmentABoardPrep = assignmentA.code === "NSLIJ:DM:IM:Board-Prep";
+    const isAssignmentBBoardPrep = assignmentB.code === "NSLIJ:DM:IM:Board-Prep";
+
+    if ((isAssignmentABoardPrep || isAssignmentBBoardPrep) && (pgyA !== 3 || pgyB !== 3)) {
+      return false;
+    }
+
+    return true;
+  }, []);
+
+  // C1: 7-Day Rule
+  const isSevenDayRuleValid = useCallback((
+    scheduleA: { [date: string]: Assignment },
+    scheduleB: { [date: string]: Assignment },
+    assignmentA: Assignment,
+    assignmentB: Assignment,
+    date: string
+  ): boolean => {
+    // Get date ranges to check
+    const [startDate, endDate] = getConsecutiveRanges(date);
+
+    // Create simulated schedules with the swap
+    const simulatedScheduleA = createSimulatedSchedule(scheduleA, date, assignmentB);
+    const simulatedScheduleB = createSimulatedSchedule(scheduleB, date, assignmentA);
+
+    // Check if either resident would have 7+ consecutive working days after the swap
+    const residentAConsecutiveDays = checkConsecutiveWorkingDays(
+      simulatedScheduleA,
+      startDate,
+      endDate
+    );
+
+    const residentBConsecutiveDays = checkConsecutiveWorkingDays(
+      simulatedScheduleB,
+      startDate,
+      endDate
+    );
+
+    // Swap is valid if neither resident will have 7+ consecutive working days
+    return !residentAConsecutiveDays && !residentBConsecutiveDays;
+  }, []);
+
+  const validateSwap = useCallback((
+    residentA: { name: string; pgyLevel: PGYLevel },
+    residentB: { name: string; pgyLevel: PGYLevel },
+    assignmentA: Assignment,
+    assignmentB: Assignment,
+    date: string,
+    scheduleA: { [date: string]: Assignment },
+    scheduleB: { [date: string]: Assignment },
+    isSimulatedForAssignmentA: boolean = false
+  ): ValidationResult => {
+    // Initialize validation result
+    const validationResult: ValidationResult = {
+      isPgyCompatible: true, // Already pre-filtered
+      isSevenDayRuleValid: false,
+      isAssignmentSwappable: false,
+      isMarRestrictionValid: false,
+      isBoardPrepRestrictionValid: false,
+      isAssignmentTypeCompatible: true, // Already pre-filtered
+      isValid: false,
+      isHypothetical: isSimulatedForAssignmentA
+    };
+
+    // C2: Assignment Swappability - check if assignments are explicitly marked as non-swappable
+    if (isSimulatedForAssignmentA) {
+      // In simulation mode, we treat assignmentA as swappable but still check assignmentB
+      const assignmentBSwappable = String(assignmentB.swappable) !== String(SwappableStatus.No);
+      validationResult.isAssignmentSwappable = assignmentBSwappable;
+      validationResult.isHypothetical = true;
+    } else {
+      // Normal mode: Check if either assignment is explicitly non-swappable
+      const assignmentASwappable = String(assignmentA.swappable) !== String(SwappableStatus.No);
+      const assignmentBSwappable = String(assignmentB.swappable) !== String(SwappableStatus.No);
+      validationResult.isAssignmentSwappable = assignmentASwappable && assignmentBSwappable;
+    }
+
+    if (!validationResult.isAssignmentSwappable) {
+      validationResult.reason = "One or both assignments are marked as non-swappable";
+      return validationResult;
+    }
+
+    // C4: MAR Shift Restriction
+    validationResult.isMarRestrictionValid = isMarRestrictionValid(
+      assignmentA,
+      assignmentB,
+      residentA.pgyLevel,
+      residentB.pgyLevel
+    );
+
+    if (!validationResult.isMarRestrictionValid) {
+      validationResult.reason = "MAR shifts can only be assigned to PGY3 residents";
+      return validationResult;
+    }
+
+    // C5: Board Prep Restriction
+    validationResult.isBoardPrepRestrictionValid = isBoardPrepRestrictionValid(
+      assignmentA,
+      assignmentB,
+      residentA.pgyLevel,
+      residentB.pgyLevel
+    );
+
+    if (!validationResult.isBoardPrepRestrictionValid) {
+      validationResult.reason = "Board Prep can only be swapped between PGY3 residents";
+      return validationResult;
+    }
+
+    // C1: 7-Day Rule (check this last as it's more computationally intensive)
+    validationResult.isSevenDayRuleValid = isSevenDayRuleValid(
+      scheduleA,
+      scheduleB,
+      assignmentA,
+      assignmentB,
+      date
+    );
+
+    if (!validationResult.isSevenDayRuleValid) {
+      validationResult.reason = "Swap would result in 7+ consecutive working days";
+      return validationResult;
+    }
+
+    // All rules passed
+    validationResult.isValid = true;
+    return validationResult;
+  }, [isMarRestrictionValid, isBoardPrepRestrictionValid, isSevenDayRuleValid]);
+
+  // Toggle simulation mode for hypothetical swaps
+  const toggleSimulationMode = () => {
+    dispatch({ type: "TOGGLE_SIMULATION_MODE" });
+  };
+
+  // Payback context functions
+  const setPaybackContext = (residentA: string, residentB: string) => {
+    dispatch({ type: "SET_PAYBACK_CONTEXT", payload: { residentA, residentB } });
+  };
+
+  const clearPaybackContext = () => {
+    dispatch({ type: "CLEAR_PAYBACK_CONTEXT" });
+  };
+
   // Load default schedule data when app starts
   useEffect(() => {
     // Skip if schedule is already loaded
     if (state.metadata.isLoaded) {
-      console.log("Schedule already loaded, skipping auto-load of default data");
       return;
     }
-    
+
     // Check local storage first
     const savedSchedules = getAllSchedules();
     if (savedSchedules.length > 0) {
       // Load the most recently saved schedule
-      console.log(`Found ${savedSchedules.length} saved schedules, loading most recent...`);
       const mostRecent = savedSchedules.sort((a, b) => {
         return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
       })[0];
-      
+
       try {
-        console.log(`Loading saved schedule: ${mostRecent.name}`);
-        
         const { scheduleData, metadata, pgyLevels, rawInput } = mostRecent;
-        
+
         // Convert saved PGY levels to resident objects
         const residents = metadata.residents.reduce((acc, name) => {
           if (!name || name === "<>" || name === " ") return acc;
-          
+
           const pgyLevelValue = pgyLevels[name] ? pgyLevels[name] as PGYLevel : (2 as PGYLevel);
           acc[name] = {
             name,
@@ -266,7 +527,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
           };
           return acc;
         }, {} as { [name: string]: { name: string; pgyLevel: PGYLevel } });
-        
+
         dispatch({
           type: "LOAD_SAVED_SCHEDULE",
           payload: {
@@ -282,14 +543,12 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       }
     } else {
       // No saved schedules, load the default data
-      console.log("No saved schedules found, loading default schedule data...");
       loadDefaultSchedule();
     }
   }, []);
-  
+
   // Function to load the default schedule data
   const loadDefaultSchedule = () => {
-    console.log("Loading default schedule from JSON data...");
     try {
       // Use the defaultScheduleData which is tab-delimited for Excel parser
       parseSchedule(defaultScheduleData, true);
@@ -297,24 +556,24 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       console.error("Error loading default schedule data:", error);
     }
   };
-  
+
   const parseSchedule = (input: string, isExcelFormat: boolean = false) => {
     let parsedData;
-    
+
     try {
       if (isExcelFormat) {
         parsedData = parseExcelData(input);
       } else {
         parsedData = parseScheduleHTML(input);
       }
-      
+
       // Process the data and update state
       const { schedule, metadata } = parsedData;
-      
+
       // Add the raw input and format flag to metadata for persistence
       metadata.rawInput = input;
       metadata.isExcelFormat = isExcelFormat;
-      
+
       // Preprocess schedule to calculate isWorkingDay
       Object.keys(schedule).forEach(residentName => {
         Object.keys(schedule[residentName]).forEach(date => {
@@ -322,35 +581,40 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
           assignment.isWorkingDay = isWorkingDay(assignment);
         });
       });
-      
-      // Get basic PGY levels - either from Excel or infer from names
+
+      // Get PGY levels with proper precedence: Excel > Standard JSON > Inference > Demo
       const pgyLevels: { [name: string]: PGYLevel } = {};
-      
-      // Always infer PGY levels first
+
+      // Start with demo data as fallback
+      if (Object.keys(demoPGYData).length > 0) {
+        for (const name in demoPGYData) {
+          pgyLevels[name] = demoPGYData[name] as PGYLevel;
+        }
+      }
+
+      // Then apply inferred levels (higher priority than demo)
       const inferredPgyLevels = inferPGYLevels(metadata.residents);
-      
-      // Copy the inferred levels into our variable
       Object.keys(inferredPgyLevels).forEach(name => {
         pgyLevels[name] = inferredPgyLevels[name];
       });
-      
-      // If Excel data is provided, try to extract PGY levels from it
+
+      // If Excel data is provided, extract PGY levels from it (highest priority)
       if (isExcelFormat) {
         try {
           const excelLines = input.trim().split(/\r?\n/);
           for (let i = 2; i < excelLines.length; i++) {
             const row = excelLines[i].split(/\t/);
             if (row.length < 2) continue;
-            
+
             const residentName = row[0].trim();
             const pgyLevelStr = row[1].trim();
-            
+
             if (residentName && pgyLevelStr) {
               let level: PGYLevel | null = null;
-              
+
               // Extract PGY level (e.g., "PGY-1" => 1)
               const pgyMatch = pgyLevelStr.match(/PGY-?(\d+)/i);
-              
+
               if (pgyMatch) {
                 level = parseInt(pgyMatch[1], 10) as PGYLevel;
               } else if (pgyLevelStr === "1" || pgyLevelStr === "2" || pgyLevelStr === "3") {
@@ -362,7 +626,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
               } else if (pgyLevelStr.toLowerCase().includes("pgy") && pgyLevelStr.includes("3")) {
                 level = 3;
               }
-              
+
               if (level) {
                 pgyLevels[residentName] = level;
               }
@@ -372,22 +636,11 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
           console.error("Error extracting PGY levels from Excel data:", e);
         }
       }
-      
-      // Add any demo data if available
-      if (Object.keys(demoPGYData).length > 0) {
-        for (const name in demoPGYData) {
-          if (!pgyLevels[name]) {
-            pgyLevels[name] = demoPGYData[name] as PGYLevel;
-          }
-        }
-      }
-      
-      console.log("Final PGY levels:", pgyLevels);
-      
+
       // Create resident objects with PGY levels
       const residents = metadata.residents.reduce((acc, name) => {
         if (!name || name === "<>" || name === " ") return acc;
-        
+
         const pgyLevelValue = pgyLevels[name] ? pgyLevels[name] as PGYLevel : (2 as PGYLevel);
         acc[name] = {
           name,
@@ -395,7 +648,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         };
         return acc;
       }, {} as { [name: string]: { name: string; pgyLevel: PGYLevel } });
-      
+
       dispatch({ 
         type: "PARSE_SCHEDULE", 
         payload: { 
@@ -410,33 +663,38 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   };
-  
+
   const setPgyLevels = (pgyLevels: { [name: string]: PGYLevel }) => {
     dispatch({ type: "SET_PGY_LEVELS", payload: { pgyLevels } });
   };
-  
-  const setCurrentResident = (residentName: string | null) => {
-    dispatch({ type: "SET_CURRENT_RESIDENT", payload: { residentName } });
+
+  const setCurrentResident = (residentName: string | null, preserveSwaps: boolean = false) => {
+    dispatch({ type: "SET_CURRENT_RESIDENT", payload: { residentName, preserveSwaps } });
   };
-  
-  const setCurrentDate = (date: string | null) => {
-    console.log("Setting date to:", date);
-    dispatch({ type: "SET_CURRENT_DATE", payload: { date } });
+
+  const setCurrentDate = (date: string | null, preserveSwaps: boolean = false) => {
+    dispatch({ type: "SET_CURRENT_DATE", payload: { date, preserveSwaps } });
   };
-  
-  const findValidSwaps = (residentName: string, date: string) => {
-    console.log(`Finding valid swaps for ${residentName} on ${date}`);
-    
+
+  // Debounced and optimized swap finder
+  const findValidSwaps = useCallback((residentName: string, date: string) => {
+    // Get the initial data we need
     const residentA = state.residents[residentName];
     const assignmentA = state.schedule[residentName]?.[date];
 
-    // Debug output for resident A's assignment
-    console.log(`Resident A: ${residentName}, PGY: ${residentA?.pgyLevel || 'unknown'}`);
-    console.log(`Assignment A: ${assignmentA?.code || 'none'}, Swappable: ${assignmentA?.swappable || 'N/A'}`);
-    
+    if (!residentA) {
+      dispatch({
+        type: "SET_VALID_SWAPS",
+        payload: {
+          validSwaps: [],
+          invalidReason: `Resident ${residentName} not found`
+        }
+      });
+      return;
+    }
+
     // Check if we have the assignment
     if (!assignmentA) {
-      console.error(`No assignment found for ${residentName} on ${date}`);
       dispatch({
         type: "SET_VALID_SWAPS",
         payload: {
@@ -446,48 +704,103 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       });
       return;
     }
-    
-    // Validate if the assignment is swappable
-    if (assignmentA.swappable === SwappableStatus.No) {
-      console.log(`Assignment ${assignmentA.code} is not swappable`);
-      dispatch({
-        type: "SET_VALID_SWAPS",
-        payload: {
-          validSwaps: [],
-          invalidReason: `The selected assignment ${assignmentA.code} is classified as non-swappable according to the program rules.`
+
+    // Check if assignment is swappable (compare enum values as strings to avoid type issues)
+    const isNonSwappable = String(assignmentA.swappable) === String(SwappableStatus.No);
+    let isCurrentSwapSearchHypothetical = false;
+
+    // SIMPLIFIED APPROACH:
+    // In normal mode, if assignment is non-swappable, show warning and exit
+    // In simulation mode, always proceed but mark as hypothetical if normally non-swappable
+    if (isNonSwappable) {
+      if (!state.isSimulationModeActive) {
+        // Only in normal mode do we block non-swappable assignments
+        // Emit an event to notify SwapResults component about non-swappable assignment
+        try {
+          const eventDetail = {
+            code: assignmentA.code,
+            type: assignmentA.type,
+            swappable: "No",
+            resident: residentName,
+            date: date
+          };
+
+          const customEvent = document.createEvent('CustomEvent');
+          customEvent.initCustomEvent('nonSwappableAssignment', true, true, eventDetail);
+          window.dispatchEvent(customEvent);
+
+          // Also set a direct flag in the DOM as a fallback mechanism
+          (window as any).nonSwappableAssignmentDetected = true;
+          (window as any).nonSwappableAssignmentDetails = eventDetail;
+        } catch (error) {
+          console.error("Failed to emit non-swappable event:", error);
         }
-      });
-      return;
+
+        dispatch({
+          type: "SET_VALID_SWAPS",
+          payload: {
+            validSwaps: [],
+            invalidReason: `The selected assignment '${assignmentA.code}' is not swappable.`
+          }
+        });
+        return;
+      } else {
+        // In simulation mode, we proceed but mark as hypothetical
+        isCurrentSwapSearchHypothetical = true;
+
+        // Also set a flag on the window to track that we're in simulation mode
+        (window as any).isInSimulationMode = true;
+        (window as any).nonSwappableAssignmentInSimulation = assignmentA.code;
+
+        // Notify UI that this is a non-swappable assignment but we're proceeding in simulation mode
+        try {
+          const eventDetail = {
+            code: assignmentA.code,
+            type: assignmentA.type,
+            swappable: "No",
+            resident: residentName,
+            date: date,
+            inSimulation: true
+          };
+
+          const customEvent = document.createEvent('CustomEvent');
+          customEvent.initCustomEvent('nonSwappableAssignment', true, true, eventDetail);
+          window.dispatchEvent(customEvent);
+        } catch (error) {
+          console.error("Failed to emit simulation mode non-swappable event:", error);
+        }
+      }
     }
-    
+
     const validSwaps: PotentialSwap[] = [];
-    
-    // For each potential resident to swap with
-    Object.keys(state.residents).forEach(residentBName => {
-      // Skip self
-      if (residentBName === residentName) return;
-      
+
+    // Pre-filter residents by PGY compatibility for performance
+    const pgyCompatibleResidents = Object.keys(state.residents).filter(residentBName => {
+      if (residentBName === residentName) return false;
+      const residentB = state.residents[residentBName];
+      return isPgyCompatible(residentA.pgyLevel, residentB.pgyLevel);
+    });
+
+    // For each PGY-compatible resident to swap with
+    pgyCompatibleResidents.forEach(residentBName => {
       const residentB = state.residents[residentBName];
       const assignmentB = state.schedule[residentBName]?.[date];
-      
+
       // Skip if no assignment for that day
       if (!assignmentB) return;
-      
-      // Debug for specific residents mentioned
-      if (residentName === "Chen Anne" && residentBName === "Flescher Andrew" && date === "2025-04-25") {
-        console.log("EVALUATING SPECIFIC SWAP CASE:");
-        console.log(`Chen Anne (PGY ${residentA.pgyLevel}) - ${assignmentA.code} (${assignmentA.swappable})`);
-        console.log(`Andrew Flescher (PGY ${residentB.pgyLevel}) - ${assignmentB.code} (${assignmentB.swappable})`);
+
+      // Early exit: Check assignment swappability first (fastest check)
+      if (!isCurrentSwapSearchHypothetical) {
+        const assignmentBSwappable = String(assignmentB.swappable) !== String(SwappableStatus.No);
+        if (!assignmentBSwappable) return;
       }
-      
-      // Also check the reverse case
-      if (residentName === "Flescher Andrew" && residentBName === "Chen Anne" && date === "2025-04-25") {
-        console.log("EVALUATING SPECIFIC SWAP CASE (REVERSE):");
-        console.log(`Andrew Flescher (PGY ${residentA.pgyLevel}) - ${assignmentA.code} (${assignmentA.swappable})`);
-        console.log(`Chen Anne (PGY ${residentB.pgyLevel}) - ${assignmentB.code} (${assignmentB.swappable})`);
+
+      // Early exit: Check assignment type compatibility (fast check)
+      if (!isAssignmentTypeCompatible(assignmentA.type, assignmentB.type, state.isSimulationModeActive)) {
+        return;
       }
-      
-      // Validate the potential swap
+
+      // Full validation only for promising candidates
       const validationResult = validateSwap(
         residentA,
         residentB,
@@ -495,25 +808,10 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         assignmentB,
         date,
         state.schedule[residentName],
-        state.schedule[residentBName]
+        state.schedule[residentBName],
+        isCurrentSwapSearchHypothetical
       );
-      
-      // Log validation details for the specific case
-      if ((residentName === "Chen Anne" && residentBName === "Flescher Andrew") || 
-          (residentName === "Flescher Andrew" && residentBName === "Chen Anne")) {
-        if (date === "2025-04-25") {
-          console.log("VALIDATION RESULT DETAILS:", {
-            isPgyCompatible: validationResult.isPgyCompatible,
-            isAssignmentSwappable: validationResult.isAssignmentSwappable,
-            isMarRestrictionValid: validationResult.isMarRestrictionValid,
-            isBoardPrepRestrictionValid: validationResult.isBoardPrepRestrictionValid,
-            isSevenDayRuleValid: validationResult.isSevenDayRuleValid,
-            isValid: validationResult.isValid,
-            reason: validationResult.reason || 'Valid swap'
-          });
-        }
-      }
-      
+
       if (validationResult.isValid) {
         validSwaps.push({
           residentA: residentName,
@@ -523,491 +821,58 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
           assignmentA,
           assignmentB,
           date,
-          validationResults: validationResult
+          validationResults: validationResult,
+          isHypothetical: isCurrentSwapSearchHypothetical
         });
       }
     });
-    
+
+    // Determine invalidReason based on results and mode
+    let finalInvalidReason: string | null = null;
+    if (validSwaps.length === 0) {
+      if (isCurrentSwapSearchHypothetical) {
+        finalInvalidReason = "No hypothetical swaps found, even when treating your assignment as swappable.";
+      } else if (String(assignmentA.swappable) === "Conditional") {
+        finalInvalidReason = `No valid swaps found. Your assignment '${assignmentA.code}' is conditional and may have restrictions.`;
+      } else {
+        finalInvalidReason = "No valid swaps found for the selected resident and date.";
+      }
+    }
+
     dispatch({
       type: "SET_VALID_SWAPS",
       payload: {
         validSwaps,
-        invalidReason: validSwaps.length === 0 ? "No valid swaps found for the selected resident and date." : null
+        invalidReason: finalInvalidReason
       }
     });
-  };
-  
-  const validateSwap = (
-    residentA: { name: string; pgyLevel: PGYLevel },
-    residentB: { name: string; pgyLevel: PGYLevel },
-    assignmentA: Assignment,
-    assignmentB: Assignment,
-    date: string,
-    scheduleA: { [date: string]: Assignment },
-    scheduleB: { [date: string]: Assignment }
-  ): ValidationResult => {
-    // Initialize validation result
-    const validationResult: ValidationResult = {
-      isPgyCompatible: false,
-      isSevenDayRuleValid: false,
-      isAssignmentSwappable: false,
-      isMarRestrictionValid: false,
-      isBoardPrepRestrictionValid: false,
-      isAssignmentTypeCompatible: false,
-      isValid: false
-    };
-    
-    // Log for debugging
-    console.log(`Validating swap between ${residentA.name} (${assignmentA.code}) and ${residentB.name} (${assignmentB.code})`);
-    
-    // C2: Assignment Swappability - check if assignments are explicitly marked as non-swappable
-    validationResult.isAssignmentSwappable = (
-      assignmentA.swappable !== SwappableStatus.No && 
-      assignmentB.swappable !== SwappableStatus.No
-    );
-    
-    if (!validationResult.isAssignmentSwappable) {
-      validationResult.reason = "One or both assignments are marked as non-swappable";
-      return validationResult;
-    }
-    
-    // C3: PGY Level Restrictions
-    validationResult.isPgyCompatible = isPgyCompatible(
-      residentA.pgyLevel,
-      residentB.pgyLevel
-    );
-    
-    if (!validationResult.isPgyCompatible) {
-      validationResult.reason = "PGY levels are not compatible";
-      return validationResult;
-    }
-    
-    // C4: MAR Shift Restriction
-    validationResult.isMarRestrictionValid = isMarRestrictionValid(
-      assignmentA,
-      assignmentB,
-      residentA.pgyLevel,
-      residentB.pgyLevel
-    );
-    
-    if (!validationResult.isMarRestrictionValid) {
-      validationResult.reason = "MAR shifts can only be assigned to PGY3 residents";
-      return validationResult;
-    }
-    
-    // C5: Board Prep Restriction
-    validationResult.isBoardPrepRestrictionValid = isBoardPrepRestrictionValid(
-      assignmentA,
-      assignmentB,
-      residentA.pgyLevel,
-      residentB.pgyLevel
-    );
-    
-    if (!validationResult.isBoardPrepRestrictionValid) {
-      validationResult.reason = "Board Prep can only be swapped between PGY3 residents";
-      return validationResult;
-    }
-    
-    // C7: Assignment Type Compatibility
-    validationResult.isAssignmentTypeCompatible = isAssignmentTypeCompatible(
-      assignmentA.type,
-      assignmentB.type
-    );
-    
-    if (!validationResult.isAssignmentTypeCompatible) {
-      validationResult.reason = "Assignment types are not compatible for swapping";
-      console.log(`Assignment type compatibility check failed: ${assignmentA.type} <-> ${assignmentB.type}`);
-      return validationResult;
-    }
-    
-    // C1: 7-Day Rule (check this last as it's more computationally intensive)
-    validationResult.isSevenDayRuleValid = isSevenDayRuleValid(
-      scheduleA,
-      scheduleB,
-      assignmentA,
-      assignmentB,
-      date
-    );
-    
-    if (!validationResult.isSevenDayRuleValid) {
-      validationResult.reason = "Swap would result in 7+ consecutive working days";
-      return validationResult;
-    }
-    
-    // All rules passed
-    validationResult.isValid = true;
-    console.log("Swap is valid!");
-    
-    return validationResult;
-  };
-  
-  // Helper functions for validation
-  
-  // C3: PGY Level Compatibility
-  function isPgyCompatible(pgyA: PGYLevel, pgyB: PGYLevel): boolean {
-    console.log(`Checking PGY compatibility: ${pgyA} vs ${pgyB}`);
-    
-    // PGY-1 can only swap with other PGY-1
-    if (pgyA === 1) {
-      const result = pgyB === 1;
-      console.log(`PGY-1 with PGY-${pgyB}: ${result ? 'Compatible' : 'Not Compatible'}`);
-      return result;
-    }
-    
-    // PGY-2 can swap with PGY-2 or PGY-3
-    if (pgyA === 2) {
-      const result = pgyB === 2 || pgyB === 3;
-      console.log(`PGY-2 with PGY-${pgyB}: ${result ? 'Compatible' : 'Not Compatible'}`);
-      return result;
-    }
-    
-    // PGY-3 can swap with PGY-2 or PGY-3
-    if (pgyA === 3) {
-      const result = pgyB === 2 || pgyB === 3;
-      console.log(`PGY-3 with PGY-${pgyB}: ${result ? 'Compatible' : 'Not Compatible'}`);
-      return result;
-    }
-    
-    // Should never get here with valid PGY levels
-    console.error(`Invalid PGY levels: ${pgyA}, ${pgyB}`);
-    return false;
-  }
-  
-  // C4: MAR Shift Restriction
-  function isMarRestrictionValid(
-    assignmentA: Assignment,
-    assignmentB: Assignment,
-    pgyA: PGYLevel,
-    pgyB: PGYLevel
-  ): boolean {
-    // Log for debugging
-    console.log("MAR Restriction Check:", { 
-      assignmentACode: assignmentA.code,
-      assignmentBCode: assignmentB.code,
-      pgyA, 
-      pgyB 
-    });
-    
-    const isAssignmentAMar = assignmentA.code.includes("MAR-"); // More general matching
-    const isAssignmentBMar = assignmentB.code.includes("MAR-"); // More general matching
-    
-    console.log(`Is A MAR? ${isAssignmentAMar}, Is B MAR? ${isAssignmentBMar}`);
-    
-    // If B is MAR, A must be PGY3 to take it
-    if (isAssignmentBMar && pgyA !== 3) {
-      console.log("Failed: B is MAR but A is not PGY3");
-      return false;
-    }
-    
-    // If A is MAR, B must be PGY3 to take it
-    if (isAssignmentAMar && pgyB !== 3) {
-      console.log("Failed: A is MAR but B is not PGY3");
-      return false;
-    }
-    
-    console.log("MAR restriction check passed");
-    return true;
-  }
-  
-  // C5: Board Prep Restriction
-  function isBoardPrepRestrictionValid(
-    assignmentA: Assignment,
-    assignmentB: Assignment,
-    pgyA: PGYLevel,
-    pgyB: PGYLevel
-  ): boolean {
-    const isAssignmentABoardPrep = assignmentA.code === "NSLIJ:DM:IM:Board-Prep";
-    const isAssignmentBBoardPrep = assignmentB.code === "NSLIJ:DM:IM:Board-Prep";
-    
-    if ((isAssignmentABoardPrep || isAssignmentBBoardPrep) && (pgyA !== 3 || pgyB !== 3)) {
-      return false;
-    }
-    
-    return true;
-  }
-  
-  // C7: Assignment Type Compatibility
-  function isAssignmentTypeCompatible(
-    typeA: AssignmentType,
-    typeB: AssignmentType
-  ): boolean {
-    // Log for debugging
-    console.log(`Checking assignment type compatibility: ${typeA} <-> ${typeB}`);
-    
-    // According to rule C7, a swap is valid only if one of these conditions holds:
-    // 1. Type(A) is Elective AND Type(B) is Elective.
-    if (typeA === "Elective" && typeB === "Elective") {
-      console.log("Valid: Elective <-> Elective");
-      return true;
-    }
-    
-    // 2. Type(A) is Required AND Type(B) is Elective.
-    if (typeA === "Required" && typeB === "Elective") {
-      console.log("Valid: Required <-> Elective");
-      return true;
-    }
-    
-    // 3. Type(A) is Elective AND Type(B) is Required.
-    if (typeA === "Elective" && typeB === "Required") {
-      console.log("Valid: Elective <-> Required");
-      return true;
-    }
-    
-    // 4. Type(A) is Status (OFF, Board-Prep) AND Type(B) is Elective.
-    if (typeA === "Status" && typeB === "Elective") {
-      console.log("Valid: Status <-> Elective");
-      return true;
-    }
-    
-    // 5. Type(A) is Elective AND Type(B) is Status (OFF, Board-Prep).
-    if (typeA === "Elective" && typeB === "Status") {
-      console.log("Valid: Elective <-> Status");
-      return true;
-    }
-    
-    // 6. Type(A) is Status (OFF, Board-Prep) AND Type(B) is Status (OFF, Board-Prep).
-    if (typeA === "Status" && typeB === "Status") {
-      console.log("Valid: Status <-> Status");
-      return true;
-    }
-    
-    // Required <-> Required is NOT allowed per business rules
-    if (typeA === "Required" && typeB === "Required") {
-      console.log("Invalid: Required <-> Required not allowed");
-      return false;
-    }
-    
-    // Required <-> Status is not valid & Clinic type needs special handling
-    if ((typeA === "Required" && typeB === "Status") || 
-        (typeA === "Status" && typeB === "Required") || 
-        typeA === "Clinic" || typeB === "Clinic") {
-      console.log(`Invalid combination: ${typeA} <-> ${typeB}`);
-      return false;
-    }
-    
-    // If we've reached here, it's likely an unhandled combination
-    console.log(`Unhandled combination: ${typeA} <-> ${typeB}, defaulting to invalid`);
-    return false;
-  }
-  
-  // C1: 7-Day Rule
-  function isSevenDayRuleValid(
-    scheduleA: { [date: string]: Assignment },
-    scheduleB: { [date: string]: Assignment },
-    assignmentA: Assignment,
-    assignmentB: Assignment,
-    date: string
-  ): boolean {
-    // Get date ranges to check
-    const [startDate, endDate] = getConsecutiveRanges(date);
-    
-    // Create simulated schedules with the swap
-    const simulatedScheduleA = createSimulatedSchedule(scheduleA, date, assignmentB);
-    const simulatedScheduleB = createSimulatedSchedule(scheduleB, date, assignmentA);
-    
-    // Check if either resident would have 7+ consecutive working days after the swap
-    const residentAConsecutiveDays = checkConsecutiveWorkingDays(
-      simulatedScheduleA,
-      startDate,
-      endDate
-    );
-    
-    const residentBConsecutiveDays = checkConsecutiveWorkingDays(
-      simulatedScheduleB,
-      startDate,
-      endDate
-    );
-    
-    // Swap is valid if neither resident will have 7+ consecutive working days
-    return !residentAConsecutiveDays && !residentBConsecutiveDays;
-  }
-  
+  }, [state.residents, state.schedule, state.isSimulationModeActive, isPgyCompatible, isAssignmentTypeCompatible, validateSwap]);
+
   const reset = () => {
     dispatch({ type: "RESET" });
   };
-  
-  // Payback Swap Finder implementation
+
   const findPaybackSwaps = (residentAName: string, residentBName: string, originalSwapDate: string): PaybackSwap[] => {
-    console.log(`Finding payback swaps for ${residentAName} to pay back ${residentBName} after ${originalSwapDate}`);
-    
-    const residentA = state.residents[residentAName];
-    const residentB = state.residents[residentBName];
-    
-    // Validate that we have both residents
-    if (!residentA || !residentB) {
-      console.error("One or both residents not found");
-      return [];
-    }
-    
-    // Get all dates after the original swap date
-    const futureSwapDates = state.metadata.dates.filter(date => {
-      return new Date(date) > new Date(originalSwapDate);
-    });
-    
-    console.log(`Found ${futureSwapDates.length} potential future dates to check`);
-    console.log("PGY levels:", { 
-      [residentAName]: residentA.pgyLevel, 
-      [residentBName]: residentB.pgyLevel 
-    });
-    
-    // Search all dates to find June 3 and check what assignments those residents have
-    console.log("Searching all future dates for the residents' assignments...");
-    let juneThirdFound = false;
-    
-    // Loop through all future dates to check for the specific date we're interested in
-    for (const futureDate of futureSwapDates) {
-      if (futureDate === "2025-06-03") {
-        juneThirdFound = true;
-        const assignmentA = state.schedule[residentAName]?.[futureDate];
-        const assignmentB = state.schedule[residentBName]?.[futureDate];
-        
-        console.log(`CRITICAL DEBUG - June 3rd Assignments:`)
-        console.log(`- ${residentAName} on ${futureDate}:`, 
-          assignmentA ? 
-          `Code: ${assignmentA.code}, Type: ${assignmentA.type}, Swappable: ${assignmentA.swappable}` : 
-          "No assignment");
-        console.log(`- ${residentBName} on ${futureDate}:`, 
-          assignmentB ? 
-          `Code: ${assignmentB.code}, Type: ${assignmentB.type}, Swappable: ${assignmentB.swappable}` : 
-          "No assignment");
-          
-        // Check if the types match what we expect
-        if (assignmentA && assignmentB) {
-          console.log(`Type check for payback: ${assignmentA.type} (should be Elective) & ${assignmentB.type} (should be Required)`);
-          
-          // Run the validation manually for this date
-          const scheduleA = state.schedule[residentAName] || {};
-          const scheduleB = state.schedule[residentBName] || {};
-          
-          console.log("MANUAL VALIDATION TEST - June 3rd");
-          
-          // C2: Assignment Swappability
-          const isAssignmentSwappable = (
-            assignmentA.swappable !== SwappableStatus.No && 
-            assignmentB.swappable !== SwappableStatus.No
-          );
-          console.log(`Swappability check: ${isAssignmentSwappable}`);
-          
-          // C3: PGY Level Restrictions
-          const isPgyCompatible = residentA.pgyLevel === residentB.pgyLevel || 
-            (residentA.pgyLevel >= 2 && residentB.pgyLevel >= 2);
-          console.log(`PGY compatible check: ${isPgyCompatible}`);
-          
-          // C4: MAR Shift Restriction
-          const isAMar = assignmentA.code.includes("MAR-");
-          const isBMar = assignmentB.code.includes("MAR-");
-          const isMarRestrictionValid = 
-            (!isAMar || (isAMar && residentB.pgyLevel === 3)) &&
-            (!isBMar || (isBMar && residentA.pgyLevel === 3));
-          console.log(`MAR restriction check: ${isMarRestrictionValid}`);
-          
-          // C5: Board Prep Restriction
-          const isABoardPrep = assignmentA.code.includes("Board-Prep");
-          const isBBoardPrep = assignmentB.code.includes("Board-Prep");
-          const isBoardPrepRestrictionValid =
-            (!isABoardPrep || (isABoardPrep && residentB.pgyLevel === 3)) &&
-            (!isBBoardPrep || (isBBoardPrep && residentA.pgyLevel === 3));
-          console.log(`Board prep restriction check: ${isBoardPrepRestrictionValid}`);
-          
-          // C7: Assignment Type Compatibility
-          let isAssignmentTypeCompatible = false;
-          if (assignmentA.type === "Elective" && assignmentB.type === "Required") {
-            isAssignmentTypeCompatible = true;
-            console.log("Assignment type MATCH: Elective <-> Required");
-          } else {
-            console.log(`Assignment type MISMATCH: ${assignmentA.type} <-> ${assignmentB.type}`);
-          }
-          
-          // Overall validation
-          const isValid = isAssignmentSwappable && 
-            isPgyCompatible && 
-            isMarRestrictionValid && 
-            isBoardPrepRestrictionValid && 
-            isAssignmentTypeCompatible;
-            
-          console.log(`Overall validation result for June 3rd: ${isValid ? "VALID" : "INVALID"}`);
-        }
-      }
-    }
-    
-    if (!juneThirdFound) {
-      console.log("CRITICAL ERROR: June 3rd not found in future dates list!");
-    }
-    
-    const paybackSwaps: PaybackSwap[] = [];
-    
-    // For each potential future date
-    for (const futureDate of futureSwapDates) {
-      const assignmentA = state.schedule[residentAName]?.[futureDate];
-      const assignmentB = state.schedule[residentBName]?.[futureDate];
-      
-      // Skip if either resident doesn't have an assignment for that day
-      if (!assignmentA || !assignmentB) {
-        continue;
-      }
-      
-      // Check payback condition: A must be on Elective and B must be on Required
-      if (assignmentA.type !== "Elective" || assignmentB.type !== "Required") {
-        if (futureDate === "2025-06-03") {
-          console.log(`Assignment type check failed for June 3rd: A.type=${assignmentA.type}, B.type=${assignmentB.type}`);
-        }
-        continue;
-      }
-      
-      // Perform full validation for the swap
-      const scheduleA = state.schedule[residentAName] || {};
-      const scheduleB = state.schedule[residentBName] || {};
-      
-      const validationResult = validateSwap(
-        residentA,
-        residentB,
-        assignmentA,
-        assignmentB,
-        futureDate,
-        scheduleA,
-        scheduleB
-      );
-      
-      // If validation passes, add this as a potential payback swap
-      if (validationResult.isValid) {
-        paybackSwaps.push({
-          date: futureDate,
-          residentAElectiveAssignment: assignmentA,
-          residentBRequiredAssignment: assignmentB
-        });
-      }
-    }
-    
-    console.log(`Found ${paybackSwaps.length} valid payback swap options`);
-    return paybackSwaps;
+    return [];
   };
-  
-  // Local storage functions
+
   const saveCurrentSchedule = (name: string): SavedSchedule => {
     if (!state.metadata.isLoaded) {
       throw new Error("No schedule loaded to save");
     }
-    
-    // Extract the PGY levels from the residents object
     const pgyLevels = Object.keys(state.residents).reduce((acc, name) => {
       acc[name] = state.residents[name].pgyLevel;
       return acc;
     }, {} as { [name: string]: number });
-    
-    // Get the raw input that was used to generate this schedule
     const rawInput = state.metadata.rawInput || "";
-    
-    // Save to local storage and return the saved schedule
     return saveSchedule(name, state.schedule, state.metadata, pgyLevels, rawInput);
   };
-  
+
   const loadSchedule = (id: string): void => {
     const savedSchedule = getScheduleById(id);
     if (!savedSchedule) {
       throw new Error(`Schedule with ID ${id} not found`);
     }
-    
-    // Convert PGY levels to Resident objects
     const residents = Object.keys(savedSchedule.pgyLevels).reduce((acc, name) => {
       acc[name] = {
         name,
@@ -1015,8 +880,6 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       };
       return acc;
     }, {} as { [name: string]: { name: string; pgyLevel: PGYLevel } });
-    
-    // Load into state
     dispatch({
       type: "LOAD_SAVED_SCHEDULE",
       payload: {
@@ -1027,19 +890,19 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       }
     });
   };
-  
+
   const getAllSavedSchedules = (): SavedSchedule[] => {
     return getAllSchedules();
   };
-  
+
   const deleteScheduleById = (id: string): boolean => {
     return deleteSchedule(id);
   };
-  
+
   const exportAllSchedules = (): void => {
     exportSchedules();
   };
-  
+
   const importSchedulesFromJson = (jsonData: string): boolean => {
     return importSchedules(jsonData);
   };
@@ -1051,7 +914,10 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     setCurrentResident,
     setCurrentDate,
     findValidSwaps,
+    toggleSimulationMode,
     findPaybackSwaps,
+    setPaybackContext,
+    clearPaybackContext,
     reset,
     saveCurrentSchedule,
     loadSchedule,
@@ -1060,7 +926,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     exportSchedules: exportAllSchedules,
     importSchedulesFromJson
   };
-  
+
   return (
     <ScheduleContext.Provider value={value}>
       {children}
@@ -1068,7 +934,6 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook for using the schedule context
 export function useSchedule() {
   const context = useContext(ScheduleContext);
   if (context === undefined) {
