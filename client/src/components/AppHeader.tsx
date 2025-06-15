@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { CalendarDays, Repeat, RefreshCw } from "lucide-react";
+import { CalendarDays, Repeat, Moon } from "lucide-react";
 
 export default function AppHeader() {
   const [location] = useLocation();
@@ -19,6 +19,12 @@ export default function AppHeader() {
                 <div className={`flex items-center text-sm font-medium ${location === '/' ? 'text-primary-600 border-b-2 border-primary-500' : 'text-gray-500 hover:text-gray-700'}`}>
                   <Repeat className="h-4 w-4 mr-1" />
                   Swap Finder
+                </div>
+              </Link>
+              <Link href="/moonlighting">
+                <div className={`flex items-center text-sm font-medium ${location === '/moonlighting' ? 'text-primary-600 border-b-2 border-primary-500' : 'text-gray-500 hover:text-gray-700'}`}>
+                  <Moon className="h-4 w-4 mr-1" />
+                  Moonlighting
                 </div>
               </Link>
             </nav>

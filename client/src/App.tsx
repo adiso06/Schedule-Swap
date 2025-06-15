@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ScheduleProvider } from "./context/ScheduleContext";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
+import Moonlighting from "@/pages/Moonlighting";
 import Footer from "@/components/Footer";
 import { useEffect } from "react";
 import { BASE_PATH, getGitHubPagesPath } from "./lib/gitHubPagesConfig";
@@ -48,6 +49,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/moonlighting" component={Moonlighting} />
       {/* If we have additional routes, they will be added here */}
       <Route component={NotFound} />
     </Switch>

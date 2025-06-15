@@ -282,7 +282,7 @@ export default function SwapResults() {
                   <div className="flex items-center">
                     <Calendar className="h-5 w-5 text-green-600 mr-2" />
                     <span className="font-medium text-gray-800">
-                      {format(new Date(payback.date), 'EEEE, MMMM d, yyyy')}
+                      {format(parseISO(payback.date), 'EEEE, MMMM d, yyyy')}
                     </span>
                   </div>
                   <CheckCircle className="h-5 w-5 text-green-600" />

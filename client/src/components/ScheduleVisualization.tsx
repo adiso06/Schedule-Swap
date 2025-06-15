@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useSchedule } from "@/context/ScheduleContext";
-import { formatDateToYYYYMMDD, getWeekDisplay, formatDateForDisplay } from "@/lib/utils";
+import { formatDateToYYYYMMDD, getWeekDisplay, formatDateForDisplay, categorizeRotationByType } from "@/lib/utils";
 import { addDays, startOfWeek, parseISO, format } from "date-fns";
 import { getUserFriendlyLabel } from "@/lib/assignmentLabels";
 import { assignmentClassification } from "@/lib/data";
@@ -23,13 +23,12 @@ import {
 import { ArrowUpDown, Filter, X, ChevronDown, Search } from "lucide-react";
 
 export default function ScheduleVisualization() {
-  const { state } = useSchedule();
-  const { schedule, metadata, residents, validSwaps, currentResident, currentDate, currentPaybackResidentA, currentPaybackResidentB, isPaybackModeActive } = state;
+  const { state, setSelectedPgyLevels, clearAllFilters } = useSchedule();
+  const { schedule, metadata, residents, validSwaps, currentResident, currentDate, currentPaybackResidentA, currentPaybackResidentB, isPaybackModeActive, selectedPgyLevels } = state;
   
   // Sorting and filtering state
   const [sortBy, setSortBy] = useState<"name" | "pgy">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [selectedPgyLevels, setSelectedPgyLevels] = useState<string[]>([]);
   const [selectedRotations, setSelectedRotations] = useState<string[]>([]);
   const [selectedRotationGroups, setSelectedRotationGroups] = useState<string[]>([]);
   const [rotationSearchTerm, setRotationSearchTerm] = useState("");
@@ -68,12 +67,15 @@ export default function ScheduleVisualization() {
       });
     });
     
-    // Group rotations by type
+    // Group rotations by type using the new categorization system
     const groups: Record<string, string[]> = {
       "Core Rotations": [],
+      "ICU/Critical Care": [],
       "Electives": [],
-      "Time Off": [],
-      "Other": []
+      "Admin": [],
+      "Emergency Medicine": [],
+      "Clinic Assignments": [],
+      "Off Days": []
     };
     
     const rotationArray = Array.from(rotations);
@@ -88,14 +90,10 @@ export default function ScheduleVisualization() {
         }
       }
       
-      // Classify based on assignment classification or rotation name
-      const classification = assignmentClassification[originalCode];
-      if (classification?.type === "Status" || rotation.toLowerCase().includes("vacation") || rotation.toLowerCase().includes("off")) {
-        groups["Time Off"].push(rotation);
-      } else if (rotation.toLowerCase().includes("elective") || rotation.toLowerCase().includes("elect")) {
-        groups["Electives"].push(rotation);
-      } else if (originalCode.includes("IM:") || originalCode.includes("NSLIJ:DM:IM:")) {
-        groups["Core Rotations"].push(rotation);
+      // Use the new categorization function
+      const category = categorizeRotationByType(originalCode);
+      if (groups[category]) {
+        groups[category].push(rotation);
       } else {
         groups["Other"].push(rotation);
       }
@@ -201,7 +199,7 @@ export default function ScheduleVisualization() {
     const dateStr = formatDateToYYYYMMDD(date);
     const dayName = format(date, "EEE");
     const dayNum = format(date, "M/d");
-    const isWeekend = i >= 5; // Saturday and Sunday
+    const isWeekend = i === 0 || i === 6; // Sunday and Saturday
     
     return { date, dateStr, dayName, dayNum, isWeekend };
   });
@@ -257,7 +255,7 @@ export default function ScheduleVisualization() {
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  setSelectedPgyLevels([]);
+                  clearAllFilters();
                   setSelectedRotations([]);
                   setSelectedRotationGroups([]);
                   setRotationSearchTerm("");

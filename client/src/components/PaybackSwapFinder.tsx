@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSchedule } from '@/context/ScheduleContext';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { 
   Select, 
   SelectContent, 
@@ -156,7 +156,7 @@ export default function PaybackSwapFinder() {
                 <CardHeader className="pb-2 bg-blue-50">
                   <CardTitle className="text-base flex items-center">
                     <Calendar className="h-4 w-4 text-primary-600 mr-2" />
-                    {format(new Date(payback.date), "MMMM d, yyyy")}
+                    {format(parseISO(payback.date), "MMMM d, yyyy")}
                   </CardTitle>
                   <CardDescription>
                     Potential payback opportunity

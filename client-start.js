@@ -16,7 +16,7 @@ console.log('Starting SWAP client-only application...');
 console.log(`Using client directory: ${clientDir}`);
 
 // Run the client vite process with the right configuration
-const viteProcess = spawn('npx', ['vite', '--port', '5000', '--host', '0.0.0.0'], {
+  const viteProcess = spawn('npx', ['vite', '--port', '3000', '--host', '0.0.0.0'], {
   cwd: clientDir,
   stdio: 'inherit',
   shell: true,

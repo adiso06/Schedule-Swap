@@ -16,6 +16,7 @@ import {
   createSimulatedSchedule,
   isWorkingDay
 } from "@/lib/utils";
+import { clearMoonlightingCache } from "@/lib/moonlightingUtils";
 import { demoPGYData, defaultScheduleJSON, defaultScheduleData } from "@/lib/data";
 import { 
   saveSchedule, 
@@ -47,6 +48,9 @@ type ScheduleContextType = {
   setPaybackContext: (residentA: string, residentB: string) => void;
   clearPaybackContext: () => void;
   reset: () => void;
+  // Filter functions
+  setSelectedPgyLevels: (levels: string[]) => void;
+  clearAllFilters: () => void;
   // Persistence functions
   saveCurrentSchedule: (name: string) => SavedSchedule;
   loadSchedule: (id: string) => void;
@@ -75,6 +79,8 @@ const initialState: ScheduleState = {
   validSwaps: [],
   invalidReason: null,
   isSimulationModeActive: false,
+  // Filter state
+  selectedPgyLevels: [],
   // Payback context
   currentPaybackResidentA: null,
   currentPaybackResidentB: null,
@@ -104,6 +110,8 @@ type Action =
   | { type: "TOGGLE_SIMULATION_MODE" }
   | { type: "SET_PAYBACK_CONTEXT"; payload: { residentA: string, residentB: string } }
   | { type: "CLEAR_PAYBACK_CONTEXT" }
+  | { type: "SET_SELECTED_PGY_LEVELS"; payload: { levels: string[] } }
+  | { type: "CLEAR_ALL_FILTERS" }
   | { type: "LOAD_SAVED_SCHEDULE"; payload: { 
       schedule: { [residentName: string]: { [date: string]: Assignment } }, 
       metadata: { 
@@ -153,6 +161,9 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
             assignment.isWorkingDay = isWorkingDay(assignment);
           });
         });
+
+        // Clear moonlighting cache since we have updated isWorkingDay values
+        clearMoonlightingCache();
 
         // Infer PGY levels from resident names if possible
         const inferredPgyLevels = inferPGYLevels(metadata.residents);
@@ -222,6 +233,18 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
       };
 
     case "SET_CURRENT_RESIDENT":
+      // Clear window flags when resident changes and not preserving swaps
+      if (!action.payload.preserveSwaps) {
+        try {
+          (window as any).nonSwappableAssignmentDetected = false;
+          (window as any).nonSwappableAssignmentDetails = null;
+          (window as any).isInSimulationMode = false;
+          (window as any).nonSwappableAssignmentInSimulation = null;
+        } catch (error) {
+          // Ignore window access errors
+        }
+      }
+      
       return {
         ...state,
         currentResident: action.payload.residentName,
@@ -231,6 +254,18 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
       };
 
     case "SET_CURRENT_DATE":
+      // Clear window flags when date changes and not preserving swaps
+      if (!action.payload.preserveSwaps) {
+        try {
+          (window as any).nonSwappableAssignmentDetected = false;
+          (window as any).nonSwappableAssignmentDetails = null;
+          (window as any).isInSimulationMode = false;
+          (window as any).nonSwappableAssignmentInSimulation = null;
+        } catch (error) {
+          // Ignore window access errors
+        }
+      }
+      
       return {
         ...state,
         currentDate: action.payload.date,
@@ -268,6 +303,18 @@ function scheduleReducer(state: ScheduleState, action: Action): ScheduleState {
         currentPaybackResidentA: null,
         currentPaybackResidentB: null,
         isPaybackModeActive: false
+      };
+
+    case "SET_SELECTED_PGY_LEVELS":
+      return {
+        ...state,
+        selectedPgyLevels: action.payload.levels
+      };
+
+    case "CLEAR_ALL_FILTERS":
+      return {
+        ...state,
+        selectedPgyLevels: []
       };
 
     case "RESET":
@@ -582,6 +629,9 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         });
       });
 
+      // Clear moonlighting cache since we have updated isWorkingDay values
+      clearMoonlightingCache();
+
       // Get PGY levels with proper precedence: Excel > Standard JSON > Inference > Demo
       const pgyLevels: { [name: string]: PGYLevel } = {};
 
@@ -669,11 +719,40 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   };
 
   const setCurrentResident = (residentName: string | null, preserveSwaps: boolean = false) => {
+    // If setting a resident, automatically apply PGY level filters
+    if (residentName && state.residents[residentName]) {
+      const selectedResident = state.residents[residentName];
+      const selectedPgyLevel = selectedResident.pgyLevel;
+      
+      // Determine which PGY levels to show based on the user's requirements:
+      // PGY1 -> show only PGY1
+      // PGY2 -> show PGY2 + PGY3
+      // PGY3 -> show PGY2 + PGY3
+      let levelsToShow: string[] = [];
+      if (selectedPgyLevel === 1) {
+        levelsToShow = ["1"];
+      } else if (selectedPgyLevel === 2 || selectedPgyLevel === 3) {
+        levelsToShow = ["2", "3"];
+      }
+      
+      // Set the PGY filters
+      dispatch({ type: "SET_SELECTED_PGY_LEVELS", payload: { levels: levelsToShow } });
+    }
+    
     dispatch({ type: "SET_CURRENT_RESIDENT", payload: { residentName, preserveSwaps } });
   };
 
   const setCurrentDate = (date: string | null, preserveSwaps: boolean = false) => {
     dispatch({ type: "SET_CURRENT_DATE", payload: { date, preserveSwaps } });
+  };
+
+  // Filter management functions
+  const setSelectedPgyLevels = (levels: string[]) => {
+    dispatch({ type: "SET_SELECTED_PGY_LEVELS", payload: { levels } });
+  };
+
+  const clearAllFilters = () => {
+    dispatch({ type: "CLEAR_ALL_FILTERS" });
   };
 
   // Debounced and optimized swap finder
@@ -919,6 +998,8 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     setPaybackContext,
     clearPaybackContext,
     reset,
+    setSelectedPgyLevels,
+    clearAllFilters,
     saveCurrentSchedule,
     loadSchedule,
     getAllSavedSchedules,

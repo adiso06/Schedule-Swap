@@ -22,13 +22,17 @@ export const assignmentMappings: AssignmentInterpretation[] = [
   { pattern: "NSLIJ:DM:PULM:MICU-LIJ-Sw-PM", label: "LIJ MICU Swing Night" },
   { pattern: "NSLIJ:DM:PULM:MICU-LIJ-Sw-G", label: "LIJ MICU Swing Green" },
   { pattern: "NSLIJ:DM:PULM:MICU-LIJ-Sw-Y", label: "LIJ MICU Swing Yellow" },
+  { pattern: "NSLIJ:DM:PULM:MICU-LIJ-G1-Sh", label: "LIJ MICU Green 1 Short" },
   { pattern: "NSLIJ:DM:PULM:MICU-LIJ-G2-Sh", label: "LIJ MICU Green 2 Short" },
+  { pattern: "NSLIJ:DM:PULM:MICU-LIJ-Y1-Sh", label: "LIJ MICU Yellow 1 Short" },
   { pattern: "NSLIJ:DM:PULM:MICU-LIJ-G2-L", label: "LIJ MICU Green 2 Long" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-N", label: "NS MICU Night" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-Sw-PM", label: "NS MICU Swing Night" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-Sw-G", label: "NS MICU Swing Green" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-Sw-Y", label: "NS MICU Swing Yellow" },
+  { pattern: "NSLIJ:DM:PULM:MICU-NS-G1-Sh", label: "NS MICU Green 1 Short" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-G2-Sh", label: "NS MICU Green 2 Short" },
+  { pattern: "NSLIJ:DM:PULM:MICU-NS-Y1-Sh", label: "NS MICU Yellow 1 Short" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-G2-L", label: "NS MICU Green 2 Long" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-Y2-Sh", label: "NS MICU Yellow 2 Short" },
   { pattern: "NSLIJ:DM:PULM:MICU-NS-Y2-L", label: "NS MICU Yellow 2 Long" },
@@ -93,15 +97,18 @@ export const assignmentMappings: AssignmentInterpretation[] = [
   { pattern: "NSLIJ:DM:PULM:El-US-NS", label: "NS US Elective" },
   { pattern: "NSLIJ:DM:PULM:El-Sleep-NS", label: "NS Sleep Elective" },
   { pattern: "NSLIJ:DM:PALL:El-Pall-NSUH", label: "NSUH Palliative Care Elective" },
+  { pattern: "NSLIJ:DM:PALL:El-Pall-LIJ", label: "LIJ Palliative Care Elective" },
   { pattern: "NSLIJ:DE:ER-LIJ", label: "LIJ ER" },
   { pattern: "NSLIJ:DE:ER-NS", label: "NS ER" },
   { pattern: "ER:ER-LIJ", label: "LIJ ER" },
   { pattern: "DPEDS:AI:El-AI", label: "AI Elective" },
+  { pattern: "Anesthesia:El-Anesthesia", label: "Anesthesia Elective" },
   { pattern: "MICU-NS-Shw-PM", label: "NS MICU Swing Night" },
   { pattern: "MICU-NS-Shw-Y", label: "NS MICU Swing Yellow" },
   { pattern: "MICU-LIJ-Shw-PM", label: "LIJ MICU Swing Night" },
   { pattern: "MICU-LIJ-Shw-Y", label: "LIJ MICU Swing Yellow" },
   { pattern: "MICU-LIJ-Shw-G", label: "LIJ MICU Swing Green" },
+  { pattern: "MICU-NS-Shw-G", label: "NS MICU Swing Green" },
   { pattern: "0", label: "Off" },
   { pattern: "El-Research", label: "Research Elective" }, // Specific electives before generic El-
   { pattern: "EI-Pulm-LIJ", label: "LIJ Pulm Elective" },
@@ -123,6 +130,7 @@ export const assignmentMappings: AssignmentInterpretation[] = [
   { pattern: "NSLIJ:DM:GI:El-GI-LIJ", label: "LIJ GI Elective" },
   { pattern: "NSLIJ:DM:GI:El-GI-NS", label: "NS GI Elective" },
   { pattern: "NSLIJ:DM:HO:El-HemOnc-NS", label: "NS Hem/Onc Elective" },
+  { pattern: "NSLIJ:DM:HO:El-HemOnc-LIJ", label: "LIJ Hem/Onc Elective" },
   { pattern: "NSLIJ:DM:ID:El-ID-NS", label: "NS ID Elective" },
   { pattern: "NSLIJ:DM:IM:El-Procedure-LIJ", label: "LIJ Procedure Elective" },
   { pattern: "NSLIJ:DM:IM:El-Pri-Care", label: "Primary Care Elective" },
@@ -134,6 +142,7 @@ export const assignmentMappings: AssignmentInterpretation[] = [
   { pattern: "NSLIJ:DM:PULM:El-Pulm-LIJ", label: "LIJ Pulm Elective" },
   { pattern: "NSLIJ:DM:PULM:El-US-LIJ", label: "LIJ US Elective" },
   { pattern: "NSLIJ:DM:NEPH:El-Renal-LIJ", label: "LIJ Nephro Elective" },
+  { pattern: "NSLIJ:DM:NEPH:El-Renal-NS", label: "NS Nephro Elective" },
   { pattern: "NSLIJ:DM:ENDO:El-Endo-LIJ", label: "LIJ Endo Elective" },
   { pattern: "Paternity", label: "Paternity Leave" },
 
@@ -184,6 +193,9 @@ export const assignmentMappings: AssignmentInterpretation[] = [
  * @param assignmentCode The raw assignment code from the schedule
  * @returns A user-friendly label for display
  */
+// Track codes that have already been logged to prevent spam
+const loggedMissingCodes = new Set<string>();
+
 export function getUserFriendlyLabel(
   assignmentCode: string | null | undefined,
 ): string {
@@ -257,8 +269,11 @@ export function getUserFriendlyLabel(
     return label;
   }
 
-  // If no match, return the original code
-  console.warn(`No interpretation mapping found for: ${trimmedCode}`);
+  // If no match, log only once per unique code to prevent console spam
+  if (!loggedMissingCodes.has(trimmedCode)) {
+    loggedMissingCodes.add(trimmedCode);
+    console.warn(`No interpretation mapping found for: ${trimmedCode}`);
+  }
   return trimmedCode;
 }
 

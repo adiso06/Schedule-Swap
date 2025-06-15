@@ -107,52 +107,83 @@ export function parseExcelData(data: string): {
 }
 
 /**
- * Parse dates like "Apr-22" or "05-Jan" to ISO format "YYYY-MM-DD"
+ * Parse dates like "jun-25-26" (MMM-DD-YY format) to ISO format "YYYY-MM-DD"
  */
 function parseExcelDateString(dateStr: string): string | null {
-  // Check if the date is in formats like "Apr-22", "05-Jan"
+  // Check if the date is in format "MMM-DD-YY" like "jun-25-26"
   const monthNames = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    'jan', 'feb', 'mar', 'apr', 'may', 'jun', 
+    'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
   ];
 
-  // Try to match various formats
-  let day: string | number = '';
-  let month: string | number = '';
-  let year = new Date().getFullYear(); // Default to current year
+  // Try to match the new format: MMM-DD-YY (case insensitive)
+  const newFormatMatch = dateStr.match(/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)-(\d{1,2})-(\d{2})$/i);
+  if (newFormatMatch) {
+    const monthStr = newFormatMatch[1].toLowerCase();
+    const day = parseInt(newFormatMatch[2], 10);
+    const yearShort = parseInt(newFormatMatch[3], 10);
+    
+    // Convert month name to number
+    const month = monthNames.indexOf(monthStr) + 1;
+    
+    // Convert 2-digit year to 4-digit year
+    // Assume years 00-29 are 2000-2029, years 30-99 are 1930-1999
+    let year = yearShort < 30 ? 2000 + yearShort : 1900 + yearShort;
+    
+    if (month > 0) {
+      // Format numbers to ensure 2 digits
+      const formattedMonth = month.toString().padStart(2, '0');
+      const formattedDay = day.toString().padStart(2, '0');
 
+      // Return in YYYY-MM-DD format
+      return `${year}-${formattedMonth}-${formattedDay}`;
+    }
+  }
+
+  // Fallback to old formats for backward compatibility
   // Format: Apr-22 (Month abbreviation followed by day)
   const monthFirstMatch = dateStr.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{1,2})$/i);
   if (monthFirstMatch) {
-    month = monthNames.findIndex(m => m.toLowerCase() === monthFirstMatch[1].toLowerCase()) + 1;
-    day = parseInt(monthFirstMatch[2], 10);
+    const monthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    const month = monthNames.findIndex(m => m.toLowerCase() === monthFirstMatch[1].toLowerCase()) + 1;
+    const day = parseInt(monthFirstMatch[2], 10);
+    
+    // Use current year as fallback for old format
+    const year = new Date().getFullYear();
+    
+    if (month > 0) {
+      const formattedMonth = month.toString().padStart(2, '0');
+      const formattedDay = day.toString().padStart(2, '0');
+      return `${year}-${formattedMonth}-${formattedDay}`;
+    }
   }
   
   // Format: 05-Jan (Day followed by month abbreviation)
   const dayFirstMatch = dateStr.match(/^(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/i);
   if (dayFirstMatch) {
-    day = parseInt(dayFirstMatch[1], 10);
-    month = monthNames.findIndex(m => m.toLowerCase() === dayFirstMatch[2].toLowerCase()) + 1;
-  }
-
-  // Format: May-13 (Month followed by day with hyphen)
-  const monthDayMatch = dateStr.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{1,2})$/i);
-  if (monthDayMatch) {
-    month = monthNames.findIndex(m => m.toLowerCase() === monthDayMatch[1].toLowerCase()) + 1;
-    day = parseInt(monthDayMatch[2], 10);
+    const monthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    const day = parseInt(dayFirstMatch[1], 10);
+    const month = monthNames.findIndex(m => m.toLowerCase() === dayFirstMatch[2].toLowerCase()) + 1;
+    
+    // Use current year as fallback for old format
+    const year = new Date().getFullYear();
+    
+    if (month > 0) {
+      const formattedMonth = month.toString().padStart(2, '0');
+      const formattedDay = day.toString().padStart(2, '0');
+      return `${year}-${formattedMonth}-${formattedDay}`;
+    }
   }
 
   // If we couldn't parse the date properly, return null
-  if (!day || !month) {
-    return null;
-  }
-
-  // Format numbers to ensure 2 digits
-  const formattedMonth = month.toString().padStart(2, '0');
-  const formattedDay = day.toString().padStart(2, '0');
-
-  // Return in YYYY-MM-DD format
-  return `${year}-${formattedMonth}-${formattedDay}`;
+  console.warn(`Could not parse date string: ${dateStr}`);
+  return null;
 }
 
 /**

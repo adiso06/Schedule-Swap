@@ -114,6 +114,8 @@ export interface ScheduleState {
   validSwaps: PotentialSwap[];
   invalidReason: string | null;
   isSimulationModeActive: boolean; // Added for simulation mode
+  // Filter state
+  selectedPgyLevels: string[];
   // Payback context
   currentPaybackResidentA: string | null;
   currentPaybackResidentB: string | null;

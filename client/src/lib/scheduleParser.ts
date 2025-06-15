@@ -112,11 +112,8 @@ export function parseScheduleHTML(html: string): {
             allDates.push(date);
           }
           
-          // Check if it's a weekend (by bgcolor attribute or day of week)
-          const bgColor = headerCells[i].getAttribute("bgcolor");
-          isWeekendByColumn[i] = bgColor === "#ffdc64" || 
-                                 date.getDay() === 0 || 
-                                 date.getDay() === 6;
+          // Check if it's a weekend (by day of week only - more reliable than bgcolor)
+          isWeekendByColumn[i] = date.getDay() === 0 || date.getDay() === 6;
           
           console.log(`Column ${i}: Date ${dateStr}, Weekend: ${isWeekendByColumn[i]}`);
         } else {
@@ -236,7 +233,7 @@ export function getAssignmentInfo(
       type: "Required" as AssignmentType,
       swappable: SwappableStatus.No,
       isWeekend,
-      isWorkingDay: code !== "OFF" && !code.includes("Vacation") && !code.includes("LOA")
+      isWorkingDay: false // This will be calculated dynamically by the isWorkingDay() function in utils.ts
     };
   }
   
@@ -257,7 +254,7 @@ export function getAssignmentInfo(
     type: rule.type,
     swappable: swappableStatus,
     isWeekend,
-    isWorkingDay: code !== "OFF" && !code.includes("Vacation") && !code.includes("LOA") // This will be calculated later with isWorkingDay()
+    isWorkingDay: false // This will be calculated dynamically by the isWorkingDay() function in utils.ts
   };
 }
 

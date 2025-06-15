@@ -47,7 +47,7 @@ export const assignmentClassification: AssignmentClassification = {
   "0": { type: "Status", swappable: "Yes", notes: "Day off (alternative notation)" },
   
   // Leave and vacation
-  "NSLIJ:DM:IM:Vacation": { type: "Vacation", swappable: "Yes", notes: "Vacation time" },
+  "NSLIJ:DM:IM:Vacation": { type: "Status", swappable: "Yes", notes: "Vacation time" },
   "NSLIJ:DM:IM:LOA-Medical": { type: "Admin", swappable: "No", notes: "Medical leave of absence" },
   "Paternity": { type: "Admin", swappable: "No", notes: "Paternity leave" },
   
@@ -76,6 +76,7 @@ export const assignmentClassification: AssignmentClassification = {
   // Specific electives
   "NSLIJ:DM:PULM:El-US-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ US Elective" },
   "NSLIJ:DM:NEPH:El-Renal-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ Nephro Elective" },
+  "NSLIJ:DM:NEPH:El-Renal-NS": { type: "Elective", swappable: "Yes", notes: "NS Nephro Elective" },
   "NSLIJ:DM:ENDO:El-Endo-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ Endo Elective" },
   "NSLIJ:DM:PULM:El-US-NS": { type: "Elective", swappable: "Yes", notes: "NS US Elective" },
   "NSLIJ:DM:PULM:El-Sleep-NS": { type: "Elective", swappable: "Yes", notes: "NS Sleep Elective" },
@@ -88,6 +89,7 @@ export const assignmentClassification: AssignmentClassification = {
   "NSLIJ:DM:GI:El-GI-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ GI Elective" },
   "NSLIJ:DM:GI:El-GI-NS": { type: "Elective", swappable: "Yes", notes: "NS GI Elective" },
   "NSLIJ:DM:HO:El-HemOnc-NS": { type: "Elective", swappable: "Yes", notes: "NS Hem/Onc Elective" },
+  "NSLIJ:DM:HO:El-HemOnc-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ Hem/Onc Elective" },
   "NSLIJ:DM:IM:El-Procedure-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ Procedure Elective" },
   "NSLIJ:DM:IM:El-Pri-Care": { type: "Elective", swappable: "Yes", notes: "Primary Care Elective" },
   "NSLIJ:DM:IM:El-Rheum-LIJ": { type: "Elective", swappable: "Yes", notes: "LIJ Rheum Elective" },
@@ -110,7 +112,8 @@ export const assignmentClassification: AssignmentClassification = {
   
   // Research and other special assignments
   "El-Research": { type: "Elective", swappable: "Yes", notes: "Research elective" },
-  "DPEDS:AI:El-AI": { type: "Elective", swappable: "Yes", notes: "AI Elective" }
+  "DPEDS:AI:El-AI": { type: "Elective", swappable: "Yes", notes: "AI Elective" },
+  "Anesthesia:El-Anesthesia": { type: "Elective", swappable: "Yes", notes: "Anesthesia Elective" }
 };
 
 

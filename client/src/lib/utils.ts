@@ -2,6 +2,7 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Assignment, AssignmentType, SwappableStatus } from "./types";
 import { format, addDays, subDays, isWeekend, parseISO } from "date-fns";
+import { getAssignmentDetails } from "./data";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -25,6 +26,7 @@ export function getWeekDisplay(startDate: Date): string {
 }
 
 // Check if an assignment is a working day
+// This function is critical for both swap calculations and moonlighting eligibility
 export function isWorkingDay(assignment: Assignment): boolean {
   // Non-working assignments
   const nonWorkingCodes = [
@@ -43,13 +45,16 @@ export function isWorkingDay(assignment: Assignment): boolean {
     return false;
   }
 
-  // Weekend check for electives - only CCU potentially works on weekends
-  if (
-    assignment.isWeekend && 
-    assignment.type === "Elective" && 
-    !assignment.code.startsWith("CARD:CCU-")
-  ) {
-    return false;
+  // Weekend check for electives - only MICU and CCU work on weekends
+  // All other electives have weekends off regardless of what the schedule shows
+  if (assignment.isWeekend && assignment.type === "Elective") {
+    // MICU and CCU are the exceptions - they do work weekends
+    const isMICU = assignment.code.includes("MICU");
+    const isCCU = assignment.code.startsWith("CARD:CCU-") || assignment.code.includes("CCU");
+    
+    if (!isMICU && !isCCU) {
+      return false; // All other electives are off on weekends
+    }
   }
 
   return true;
@@ -87,7 +92,7 @@ export function getAssignmentBgColor(type: AssignmentType): string {
   }
 }
 
-// Check if consecutive days include 7+ working days
+// Check if working on a date would violate the 7-day rule (Monday-to-Sunday weeks)
 export function checkConsecutiveWorkingDays(
   schedule: { [date: string]: Assignment },
   startDate: string,
@@ -96,23 +101,33 @@ export function checkConsecutiveWorkingDays(
   const start = parseISO(startDate);
   const end = parseISO(endDate);
   
-  let consecutiveCount = 0;
+  // Find all Monday-to-Sunday weeks that overlap with our date range
   let currentDate = start;
   
   while (currentDate <= end) {
-    const dateStr = formatDateToYYYYMMDD(currentDate);
-    const assignment = schedule[dateStr];
+    // Find the Monday of the current week
+    const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days; otherwise go to Monday
+    const mondayOfWeek = addDays(currentDate, mondayOffset);
     
-    if (assignment && isWorkingDay(assignment)) {
-      consecutiveCount++;
-      if (consecutiveCount >= 7) {
-        return true; // Found 7+ consecutive working days
+    // Count working days in this Monday-to-Sunday week
+    let workingDaysInWeek = 0;
+    for (let i = 0; i < 7; i++) {
+      const dayInWeek = addDays(mondayOfWeek, i);
+      const dayInWeekStr = formatDateToYYYYMMDD(dayInWeek);
+      const assignment = schedule[dayInWeekStr];
+      
+      if (assignment && isWorkingDay(assignment)) {
+        workingDaysInWeek++;
       }
-    } else {
-      consecutiveCount = 0; // Reset counter
     }
     
-    currentDate = addDays(currentDate, 1);
+    if (workingDaysInWeek >= 7) {
+      return true; // Found a week with 7 working days
+    }
+    
+    // Move to next week
+    currentDate = addDays(mondayOfWeek, 7);
   }
   
   return false;
@@ -137,4 +152,75 @@ export function createSimulatedSchedule(
     ...originalSchedule,
     [dateStr]: newAssignment
   };
+}
+
+// Categorize rotation by type for better grouping
+export function categorizeRotationByType(assignmentCode: string): string {
+  if (!assignmentCode || assignmentCode.trim() === "") {
+    return "Off Days";
+  }
+
+  const trimmedCode = assignmentCode.trim();
+  
+  // Get classification details
+  const details = getAssignmentDetails(trimmedCode);
+  
+  // Handle specific patterns first (most specific)
+  
+  // Off Days
+  if (trimmedCode === "OFF" || trimmedCode === "0") {
+    return "Off Days";
+  }
+  
+  // Admin (LOA, Paternity, Chief)
+  if (trimmedCode.includes("LOA") || 
+      trimmedCode.includes("Paternity") ||
+      trimmedCode.includes("Chief")) {
+    return "Admin";
+  }
+  
+  // ICU/Critical Care (MICU, CCU)
+  if (trimmedCode.includes("MICU") || 
+      trimmedCode.includes("CCU") ||
+      trimmedCode.startsWith("CARD:CCU-")) {
+    return "ICU/Critical Care";
+  }
+  
+  // Emergency Medicine
+  if (trimmedCode.includes("ER-") || 
+      trimmedCode.includes("DE:ER") ||
+      trimmedCode.startsWith("ER:ER-")) {
+    return "Emergency Medicine";
+  }
+  
+  // Core Rotations (Team, MAR, NF, Night Admit)
+  if (trimmedCode.includes("Team-") ||
+      trimmedCode.includes("MAR-") ||
+      trimmedCode.includes("NF-") ||
+      trimmedCode.includes("Night-Ad-")) {
+    return "Core Rotations";
+  }
+  
+  // Clinic Assignments
+  if (details.type === "Clinic" || trimmedCode.includes("Clinic-")) {
+    return "Clinic Assignments";
+  }
+  
+  // Electives (El-, Cards, Pulm non-MICU, Vacation, Advocacy, Board Prep, Neuro, Palliative, ENT)
+  if (details.type === "Elective" ||
+      trimmedCode.includes("El-") ||
+      trimmedCode.includes("EI-") ||
+      trimmedCode.startsWith("CARD:El-") ||
+      trimmedCode.includes("PULM:") && !trimmedCode.includes("MICU") ||
+      trimmedCode.includes("Vacation") ||
+      trimmedCode.includes("Advocacy") ||
+      trimmedCode.includes("Board-Prep") ||
+      trimmedCode.includes("DN:Neuro") ||
+      trimmedCode.includes("Palliative") ||
+      trimmedCode === "ENT") {
+    return "Electives";
+  }
+  
+  // Default to Electives for anything else (since most unclassified items are likely electives)
+  return "Electives";
 }

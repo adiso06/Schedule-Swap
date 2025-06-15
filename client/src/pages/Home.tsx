@@ -13,7 +13,6 @@ export default function Home() {
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow">
         <div className="mb-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">SWAP <span className="text-sm font-normal text-gray-500">(Switch With A Person)</span></h1>
           <RulesModal />
         </div>
         
@@ -28,6 +27,7 @@ export default function Home() {
             <div className="bg-gradient-to-r from-primary-100 to-primary-50 -m-5 mb-5 p-5 rounded-t-lg border-b border-primary-200">
               <h2 className="text-xl font-semibold text-primary-800">Find Available Swaps</h2>
               <p className="text-sm text-primary-700 mt-1">Select a resident and date to find compatible swaps</p>
+              <p className="text-sm text-red-600 mt-2 font-medium">Please note this may not reflect the final schedule, and also has no ability to see if people are on TBA</p>
             </div>
             <SwapFinderForm />
           </div>

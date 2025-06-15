@@ -177,7 +177,7 @@ export default function SwapFinderForm() {
     for (const date of metadata.dates) {
       const formatted = formatDateForDisplay(date).toLowerCase();
       if (formatted.includes(input)) {
-        setCurrentDate(date, true); // Preserve existing swaps when updating date
+        setCurrentDate(date, false); // Clear previous swaps when searching new date
         return;
       }
     }
@@ -192,7 +192,7 @@ export default function SwapFinderForm() {
     
     // Check if this date is in our available dates
     if (metadata.dates.includes(dateStr)) {
-      setCurrentDate(dateStr, true); // Preserve existing swaps when updating date
+      setCurrentDate(dateStr, false); // Clear previous swaps when searching new date
       setDateInput(formatDateForDisplay(dateStr));
     } else {
       // Find the closest available date
@@ -207,7 +207,7 @@ export default function SwapFinderForm() {
         return prevDiff < currDiff ? prev : curr;
       }, metadata.dates[0]);
       
-      setCurrentDate(closest, true); // Preserve existing swaps when updating date
+      setCurrentDate(closest, false); // Clear previous swaps when searching new date
       setDateInput(formatDateForDisplay(closest));
       
       toast({
